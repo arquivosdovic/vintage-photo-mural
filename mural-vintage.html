@@ -1,0 +1,2004 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mural Revelado</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Special+Elite&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14110E;
+    --panel:#1D1811;
+    --panel-2:#231D14;
+    --border:#332B20;
+    --text:#EDE3D3;
+    --text-dim:#A69884;
+    --amber:#C08A45;
+    --amber-dim:#8A6535;
+    --teal:#5C8384;
+    --paper:#E8DCC5;
+    --danger:#B5573C;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Work Sans', sans-serif;
+    min-height:100vh;
+  }
+  .wrap{
+    max-width:1320px;
+    margin:0 auto;
+    padding:36px 28px 60px;
+  }
+  header{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+    gap:16px;
+    border-bottom:1px solid var(--border);
+    padding-bottom:20px;
+    margin-bottom:28px;
+    flex-wrap:wrap;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:32px;
+    margin:0;
+    letter-spacing:0.3px;
+  }
+  h1 span{color:var(--amber);}
+  .subtitle{
+    color:var(--text-dim);
+    font-size:13.5px;
+    margin-top:6px;
+    max-width:460px;
+    line-height:1.5;
+  }
+  .frame-count{
+    font-family:'Special Elite', monospace;
+    color:var(--text-dim);
+    font-size:13px;
+    letter-spacing:1px;
+    white-space:nowrap;
+  }
+  .layout{
+    display:grid;
+    grid-template-columns:360px 1fr;
+    gap:28px;
+    align-items:start;
+  }
+  .layout > aside{
+    position:sticky;
+    top:24px;
+    max-height:calc(100vh - 48px);
+    overflow-y:auto;
+    padding-right:6px;
+  }
+  .layout > aside::-webkit-scrollbar{width:6px;}
+  .layout > aside::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+  @media (max-width:920px){
+    .layout{grid-template-columns:1fr;}
+    .layout > aside{position:static;max-height:none;overflow-y:visible;padding-right:0;}
+  }
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:20px;
+  }
+  .panel + .panel{margin-top:20px;}
+  .panel h2{
+    font-family:'Special Elite', monospace;
+    font-size:12.5px;
+    text-transform:uppercase;
+    letter-spacing:1.5px;
+    color:var(--amber);
+    margin:0 0 14px;
+  }
+  .dropzone{
+    border:1.5px dashed var(--border);
+    border-radius:6px;
+    padding:26px 16px;
+    text-align:center;
+    cursor:pointer;
+    transition:border-color .15s, background .15s;
+    position:relative;
+  }
+  .dropzone.drag{
+    border-color:var(--amber);
+    background:rgba(192,138,69,0.08);
+  }
+  .dropzone .sprockets{
+    display:flex;
+    justify-content:center;
+    gap:6px;
+    margin-bottom:12px;
+  }
+  .sprockets div{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--border);
+  }
+  .dropzone p{margin:0;font-size:13.5px;color:var(--text-dim);}
+  .dropzone strong{color:var(--text);font-weight:500;}
+  input[type=file]{display:none;}
+
+  .presets{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    margin-bottom:18px;
+  }
+  .preset-btn{
+    position:relative;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    font-family:'Work Sans', sans-serif;
+    font-size:12.5px;
+    padding:10px 8px;
+    border-radius:4px;
+    cursor:pointer;
+    text-align:left;
+    transition:border-color .15s, background .15s;
+  }
+  .preset-btn:hover{border-color:var(--amber-dim);}
+  .preset-btn.active{
+    border-color:var(--amber);
+    background:rgba(192,138,69,0.12);
+    color:var(--amber);
+  }
+  .preset-btn small{display:block;color:var(--text-dim);font-size:10.5px;margin-top:2px;}
+  .preset-btn.active small{color:var(--amber-dim);}
+  .preset-random-dot{
+    position:absolute;
+    top:7px;
+    right:7px;
+    width:9px;
+    height:9px;
+    border-radius:50%;
+    background:var(--amber);
+    border:1px solid var(--amber-dim);
+    cursor:pointer;
+  }
+  .preset-random-dot.off{
+    background:transparent;
+    border-color:var(--border);
+  }
+  .presets-hint{
+    font-size:11px;
+    color:var(--text-dim);
+    margin:-10px 0 14px;
+    line-height:1.4;
+  }
+
+  .slider-row{margin-bottom:16px;}
+  .slider-row label{
+    display:flex;
+    justify-content:space-between;
+    font-size:12.5px;
+    color:var(--text-dim);
+    margin-bottom:6px;
+  }
+  .slider-row label span.val{
+    font-family:'Special Elite', monospace;
+    color:var(--text);
+  }
+  input[type=range]{
+    -webkit-appearance:none;
+    width:100%;
+    height:2px;
+    background:var(--border);
+    border-radius:2px;
+    outline:none;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:14px;height:14px;
+    border-radius:50%;
+    background:var(--amber);
+    cursor:pointer;
+    border:2px solid var(--bg);
+  }
+  input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;
+    border-radius:50%;
+    background:var(--amber);
+    cursor:pointer;
+    border:2px solid var(--bg);
+  }
+
+  .toggle-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    font-size:12.5px;
+    color:var(--text-dim);
+    padding:8px 0;
+    border-top:1px solid var(--border);
+  }
+  .toggle-row:first-of-type{border-top:none;}
+  .switch{
+    width:34px;height:18px;
+    background:var(--border);
+    border-radius:20px;
+    position:relative;
+    cursor:pointer;
+    flex-shrink:0;
+  }
+  .switch.on{background:var(--amber-dim);}
+  .switch::after{
+    content:'';
+    position:absolute;
+    width:14px;height:14px;
+    border-radius:50%;
+    background:var(--text);
+    top:2px;left:2px;
+    transition:left .15s;
+  }
+  .switch.on::after{left:18px;background:var(--paper);}
+
+  .filmstrip{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    max-height:380px;
+    overflow-y:auto;
+    margin-top:14px;
+    padding-right:4px;
+  }
+  .filmstrip::-webkit-scrollbar{width:6px;}
+  .filmstrip::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+  .frame-item{
+    display:flex;
+    flex-direction:column;
+    gap:6px;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:4px;
+    padding:6px;
+    cursor:grab;
+  }
+  .frame-item.dragging{opacity:0.4;}
+  .frame-item .row-top{
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .frame-item img{
+    width:44px;height:44px;
+    object-fit:cover;
+    border-radius:3px;
+    flex-shrink:0;
+  }
+  .frame-item .fnum{
+    font-family:'Special Elite', monospace;
+    font-size:11px;
+    color:var(--text-dim);
+    width:26px;
+    flex-shrink:0;
+  }
+  .frame-item .fname{
+    flex:1;
+    font-size:12px;
+    color:var(--text-dim);
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .frame-item button{
+    background:none;
+    border:none;
+    color:var(--text-dim);
+    cursor:pointer;
+    font-size:15px;
+    padding:2px 6px;
+    line-height:1;
+  }
+  .frame-item button:hover{color:var(--danger);}
+  .frame-item button.mini-star{font-size:14px;color:var(--text-dim);}
+  .frame-item button.mini-star:hover{color:var(--amber);}
+  .frame-item button.mini-star.active{color:var(--amber);}
+  .frame-item button.mini-lock{font-size:12px;color:var(--text-dim);opacity:.45;}
+  .frame-item button.mini-lock:hover{opacity:1;}
+  .frame-item button.mini-lock.active{color:var(--danger);opacity:1;}
+  .row-overlay{
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+    background:rgba(192,138,69,0.07);
+    border:1px solid var(--amber-dim);
+    border-radius:3px;
+    padding:6px 8px;
+  }
+  .mini-slider-row{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    font-size:10.5px;
+    color:var(--text-dim);
+  }
+  .mini-slider-row span:first-child{width:48px;flex-shrink:0;}
+  .mini-slider-row input[type=range]{flex:1;height:2px;}
+  .mini-slider-row .mini-val{
+    width:32px;
+    flex-shrink:0;
+    text-align:right;
+    font-family:'Special Elite', monospace;
+    color:var(--text);
+  }
+  .frame-item .row-extra{
+    display:flex;
+    gap:6px;
+  }
+  .mini-input, .mini-select{
+    background:var(--panel);
+    border:1px solid var(--border);
+    color:var(--text);
+    font-size:11px;
+    border-radius:3px;
+    padding:5px 6px;
+    font-family:'Work Sans', sans-serif;
+  }
+  .mini-input{flex:1;min-width:0;}
+  .mini-input::placeholder{color:var(--text-dim);}
+  .mini-select{flex-shrink:0;max-width:112px;}
+  .mini-select option{background:var(--panel-2);}
+  .mini-select.is-custom{border-color:var(--amber-dim);color:var(--amber);}
+
+  .subhead{
+    font-size:11px;
+    color:var(--text-dim);
+    text-transform:uppercase;
+    letter-spacing:1px;
+    margin-bottom:8px;
+  }
+  .btn-group{display:flex;gap:6px;margin-bottom:16px;}
+  .opt-btn{
+    flex:1;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    font-family:'Work Sans', sans-serif;
+    font-size:12px;
+    padding:9px 6px;
+    border-radius:4px;
+    cursor:pointer;
+    text-align:center;
+    transition:border-color .15s, background .15s, color .15s;
+  }
+  .opt-btn:hover{border-color:var(--amber-dim);}
+  .opt-btn.active{
+    border-color:var(--amber);
+    background:rgba(192,138,69,0.12);
+    color:var(--amber);
+  }
+  .action-row{display:flex;gap:8px;margin-top:10px;}
+  .btn-secondary{
+    flex:1;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    font-family:'Work Sans', sans-serif;
+    font-size:12px;
+    padding:9px 8px;
+    border-radius:4px;
+    cursor:pointer;
+    transition:border-color .15s, background .15s, color .15s;
+  }
+  .btn-secondary:hover{border-color:var(--amber-dim);color:var(--amber);}
+  #mosaicControls{display:none;}
+  #mosaicControls.show{display:block;}
+
+  .stage{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:6px;
+    padding:24px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  .canvas-wrap{
+    width:100%;
+    max-width:640px;
+    aspect-ratio:1/1;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    position:relative;
+    overflow:hidden;
+  }
+  #muralCanvas{
+    width:100%;
+    height:100%;
+    display:block;
+    cursor:grab;
+  }
+  #muralCanvas.dragging{cursor:grabbing;}
+  .color-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-bottom:18px;
+  }
+  input[type=color]{
+    width:38px;height:32px;
+    border:1px solid var(--border);
+    border-radius:4px;
+    background:none;
+    cursor:pointer;
+    padding:0;
+    flex-shrink:0;
+  }
+  input[type=color]::-webkit-color-swatch-wrapper{padding:2px;}
+  input[type=color]::-webkit-color-swatch{border-radius:3px;border:none;}
+  .color-value{
+    font-family:'Special Elite', monospace;
+    font-size:12px;
+    color:var(--text-dim);
+    text-transform:uppercase;
+  }
+  .hex-input{
+    flex:1;
+    font-family:'Special Elite', monospace;
+    text-transform:uppercase;
+    letter-spacing:0.5px;
+  }
+  .swatch-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    margin-bottom:18px;
+  }
+  .swatch-btn{
+    width:24px;height:24px;
+    border-radius:50%;
+    border:1px solid var(--border);
+    cursor:pointer;
+    padding:0;
+    box-shadow:0 0 0 1px rgba(0,0,0,0.15) inset;
+  }
+  .swatch-btn.active{border-color:var(--amber);box-shadow:0 0 0 2px var(--amber);}
+  .mini-select.is-global{border-color:var(--teal);color:var(--teal);}
+  .palette-live-count{
+    font-size:11.5px;
+    color:var(--text-dim);
+    margin:-6px 0 14px;
+    line-height:1.4;
+    padding:8px 10px;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:4px;
+  }
+  .palette-live-count strong{color:var(--teal);font-weight:600;}
+  .drag-hint{
+    font-size:11.5px;
+    color:var(--text-dim);
+    margin-top:12px;
+    text-align:center;
+    max-width:640px;
+  }
+  .empty-state{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    text-align:center;
+    color:var(--text-dim);
+    font-size:13px;
+    padding:20px;
+  }
+  .empty-state .sprockets{display:flex;justify-content:center;gap:6px;margin-bottom:14px;}
+  .empty-state .sprockets div{width:6px;height:6px;border-radius:50%;background:var(--border);}
+
+  .stage-footer{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    width:100%;
+    max-width:640px;
+    margin-top:18px;
+    gap:12px;
+    flex-wrap:wrap;
+  }
+  .layout-note{
+    font-size:12px;
+    color:var(--text-dim);
+    font-family:'Special Elite', monospace;
+  }
+  .btn-primary{
+    background:var(--amber);
+    color:#1A140C;
+    border:none;
+    font-family:'Work Sans', sans-serif;
+    font-weight:500;
+    font-size:13.5px;
+    padding:11px 22px;
+    border-radius:4px;
+    cursor:pointer;
+    transition:background .15s;
+  }
+  .btn-primary:hover{background:#D19A56;}
+  .btn-primary:disabled{background:var(--border);color:var(--text-dim);cursor:not-allowed;}
+
+  .size-row{
+    display:flex;
+    gap:8px;
+    margin-top:14px;
+  }
+  .size-btn{
+    flex:1;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text-dim);
+    font-family:'Special Elite', monospace;
+    font-size:11px;
+    padding:8px 4px;
+    border-radius:4px;
+    cursor:pointer;
+    text-align:center;
+  }
+  .size-btn.active{border-color:var(--amber);color:var(--amber);}
+
+  .ratio-custom-row{
+    display:flex;
+    gap:8px;
+    margin-bottom:18px;
+  }
+  .ratio-custom-row .mini-input{
+    flex:1;
+    transition:border-color .2s;
+  }
+  .ratio-custom-row .btn-secondary{
+    flex:0 0 auto;
+    padding:8px 14px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>Mural <span>Revelado</span></h1>
+      <div class="subtitle">Envie as fotos, escolha o banho de cor e elas se organizam sozinhas num mural quadrado, como uma folha de contato saindo do laboratório.</div>
+    </div>
+    <div class="frame-count" id="frameCount">00 QUADROS</div>
+  </header>
+
+  <div class="layout">
+
+    <aside>
+      <div class="panel">
+        <h2>Carregar fotos</h2>
+        <div class="dropzone" id="dropzone">
+          <div class="sprockets"><div></div><div></div><div></div><div></div><div></div></div>
+          <p><strong>Arraste as fotos aqui</strong><br>ou clique para escolher</p>
+          <input type="file" id="fileInput" accept="image/*" multiple>
+        </div>
+        <div class="filmstrip" id="filmstrip"></div>
+        <div class="action-row" id="orderRow">
+          <button class="btn-secondary" id="sortOrderBtn">Ordenar por envio</button>
+          <button class="btn-secondary" id="shuffleOrderBtn">Embaralhar ordem</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Paleta</h2>
+        <div class="palette-live-count" id="paletteLiveCount"></div>
+        <div class="presets" id="presets"></div>
+
+        <div class="slider-row">
+          <label>Saturação <span class="val" id="v-saturation">0</span></label>
+          <input type="range" id="s-saturation" min="0" max="100" value="0">
+        </div>
+        <div class="slider-row">
+          <label>Sépia <span class="val" id="v-sepia">0</span></label>
+          <input type="range" id="s-sepia" min="0" max="100" value="0">
+        </div>
+        <div class="slider-row">
+          <label>Desbotado <span class="val" id="v-fade">0</span></label>
+          <input type="range" id="s-fade" min="0" max="100" value="0">
+        </div>
+        <div class="slider-row">
+          <label>Duotom (sombra fria / luz quente) <span class="val" id="v-split">0</span></label>
+          <input type="range" id="s-split" min="0" max="100" value="0">
+        </div>
+        <div class="slider-row">
+          <label>Equilíbrio frio ← → quente <span class="val" id="v-balance">0</span></label>
+          <input type="range" id="s-balance" min="-100" max="100" value="0">
+        </div>
+        <div class="slider-row">
+          <label>Grão <span class="val" id="v-grain">0</span></label>
+          <input type="range" id="s-grain" min="0" max="100" value="0">
+        </div>
+        <div class="slider-row">
+          <label>Vinheta clara ← → escura <span class="val" id="v-vignette">0</span></label>
+          <input type="range" id="s-vignette" min="-100" max="100" value="0">
+        </div>
+
+        <div class="toggle-row">
+          <span>Bordas de folha de contato</span>
+          <div class="switch on" id="t-frame" data-key="showFrames"></div>
+        </div>
+        <div class="toggle-row">
+          <span>Numerar quadros</span>
+          <div class="switch on" id="t-numbers" data-key="showNumbers"></div>
+        </div>
+
+        <div class="action-row">
+          <button class="btn-secondary" id="randomizeBtn">Randomizar por foto</button>
+          <button class="btn-secondary" id="resetFiltersBtn">Usar filtro global</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>Composição</h2>
+
+        <div class="subhead">Cor do fundo</div>
+        <div class="color-row">
+          <input type="color" id="matColorInput" value="#0f0c09">
+          <input type="text" class="mini-input hex-input" id="matColorHex" value="#0F0C09" maxlength="7" spellcheck="false">
+        </div>
+        <div class="swatch-row" id="matColorSwatches"></div>
+
+        <div class="subhead">Proporção do mural</div>
+        <div class="presets" id="ratioPresets"></div>
+        <div class="ratio-custom-row">
+          <input type="text" class="mini-input" id="customRatioInput" placeholder="ex: 3:2 ou 2.35">
+          <button class="btn-secondary" id="customRatioBtn">Aplicar</button>
+        </div>
+
+        <div class="subhead">Layout</div>
+        <div class="btn-group" id="layoutGroup">
+          <button class="opt-btn active" data-layout="grid">Grade</button>
+          <button class="opt-btn" data-layout="mosaic">Mosaico orgânico</button>
+        </div>
+
+        <div class="subhead">Moldura</div>
+        <div class="btn-group" id="frameGroup">
+          <button class="opt-btn active" data-frame="none">Nenhuma</button>
+          <button class="opt-btn" data-frame="polaroid">Polaroid</button>
+        </div>
+
+        <div class="toggle-row">
+          <span>Mostrar legendas</span>
+          <div class="switch" id="t-captions" data-key="showCaptions"></div>
+        </div>
+
+        <div id="mosaicControls">
+          <div class="toggle-row">
+            <span>Respeitar orientação da foto</span>
+            <div class="switch on" id="t-orientation" data-key="useOrientation"></div>
+          </div>
+          <div class="action-row">
+            <button class="btn-secondary" id="shuffleBtn">Novo arranjo do mosaico</button>
+          </div>
+        </div>
+
+        <div class="subhead">Fundo desfocado</div>
+        <div class="toggle-row">
+          <span>Desfocar tudo que não é destaque</span>
+          <div class="switch" id="t-blur" data-key="blurBackground"></div>
+        </div>
+        <div class="slider-row">
+          <label>Intensidade do desfoque <span class="val" id="v-blurAmount">40</span></label>
+          <input type="range" id="s-blurAmount" min="0" max="100" value="40">
+        </div>
+      </div>
+    </aside>
+
+    <section class="stage">
+      <div class="canvas-wrap">
+        <canvas id="muralCanvas" width="1600" height="1600"></canvas>
+        <div class="empty-state" id="emptyState">
+          <div class="sprockets"><div></div><div></div><div></div><div></div><div></div></div>
+          Nenhum quadro ainda.<br>Envie fotos para começar a revelação.
+        </div>
+      </div>
+      <div class="stage-footer">
+        <div class="layout-note" id="layoutNote">GRADE — · —</div>
+        <button class="btn-primary" id="downloadBtn" disabled>Baixar mural</button>
+      </div>
+      <div class="drag-hint">Arraste uma foto do fundo para recentralizar o enquadramento, ou uma foto em destaque (✦) para reposicioná-la — duplo clique recentraliza.</div>
+      <div class="size-row">
+        <div class="size-btn active" data-size="1600">1600px</div>
+        <div class="size-btn" data-size="2400">2400px</div>
+        <div class="size-btn" data-size="3200">3200px</div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  const state = {
+    images: [],
+    settings: { saturation:0, sepia:0, fade:0, split:0, balance:0, grain:0, vignette:0, showFrames:true, showNumbers:true },
+    activePreset: null,
+    randomPool: null,
+    exportSize: 1600,
+    layoutMode: 'grid',
+    frameStyle: 'none',
+    showCaptions: false,
+    mosaicLayout: null,
+    matColor: '#0f0c09',
+    lastBoxes: [],
+    useOrientation: true,
+    aspectW: 1,
+    aspectH: 1,
+    activeRatio: 'square',
+    blurBackground: false,
+    blurAmount: 40
+  };
+
+  const RATIOS = {
+    square: { label:'1:1',     hint:'quadrado',       w:1,    h:1 },
+    r19_9:  { label:'19:9',    hint:'tela cheia',     w:19,   h:9 },
+    r9_16:  { label:'9:16',    hint:'story vertical', w:9,    h:16 },
+    r4_5:   { label:'4:5',     hint:'retrato feed',   w:4,    h:5 },
+    r5_4:   { label:'5:4',     hint:'paisagem feed',  w:5,    h:4 },
+    r191_1: { label:'1.91:1',  hint:'paisagem larga', w:1.91, h:1 },
+  };
+
+  const PREVIEW_LONG_EDGE = 1600;
+
+  const PRESETS = {
+    original: { label:'Foto original', hint:'cor real', v:{saturation:100, sepia:0, fade:0, split:0, balance:0, grain:0, vignette:0} },
+    sepia:    { label:'Sépia clássico', hint:'aconchegante', v:{saturation:0, sepia:75, fade:25, split:20, balance:15, grain:20, vignette:30} },
+    cold:     { label:'Frio lavado',    hint:'chapa antiga', v:{saturation:0, sepia:10, fade:45, split:55, balance:-40, grain:15, vignette:20} },
+    warm:     { label:'Amarelado quente', hint:'nostálgico', v:{saturation:0, sepia:40, fade:20, split:35, balance:55, grain:15, vignette:15} },
+    faded:    { label:'Retrato desbotado', hint:'arquivo velho', v:{saturation:0, sepia:20, fade:65, split:10, balance:0, grain:35, vignette:45} },
+  };
+  state.randomPool = new Set(Object.keys(PRESETS));
+
+  const PROC_MAX = 900;
+  let nextId = 1;
+
+  const filmstrip = document.getElementById('filmstrip');
+  const dropzone = document.getElementById('dropzone');
+  const fileInput = document.getElementById('fileInput');
+  const presetsEl = document.getElementById('presets');
+  const emptyState = document.getElementById('emptyState');
+  const frameCount = document.getElementById('frameCount');
+  const layoutNote = document.getElementById('layoutNote');
+  const downloadBtn = document.getElementById('downloadBtn');
+  const muralCanvas = document.getElementById('muralCanvas');
+  const randomizeBtn = document.getElementById('randomizeBtn');
+  const resetFiltersBtn = document.getElementById('resetFiltersBtn');
+  const shuffleBtn = document.getElementById('shuffleBtn');
+  const mosaicControls = document.getElementById('mosaicControls');
+  const captionToggle = document.getElementById('t-captions');
+  const matColorInput = document.getElementById('matColorInput');
+  const matColorHex = document.getElementById('matColorHex');
+  const matColorSwatches = document.getElementById('matColorSwatches');
+  const canvasWrap = document.querySelector('.canvas-wrap');
+  const ratioPresetsEl = document.getElementById('ratioPresets');
+  const customRatioInput = document.getElementById('customRatioInput');
+  const customRatioBtn = document.getElementById('customRatioBtn');
+  const sortOrderBtn = document.getElementById('sortOrderBtn');
+  const shuffleOrderBtn = document.getElementById('shuffleOrderBtn');
+  const blurToggle = document.getElementById('t-blur');
+  const blurAmountInput = document.getElementById('s-blurAmount');
+  const blurAmountVal = document.getElementById('v-blurAmount');
+
+  // Given a target "long edge" in pixels and a ratio (w:h), returns the actual
+  // pixel width/height for the mural canvas, preserving that ratio.
+  function computeCanvasDims(longEdge, rw, rh){
+    if(rw >= rh){
+      const w = longEdge;
+      const h = Math.round(longEdge * rh/rw);
+      return {w, h};
+    } else {
+      const h = longEdge;
+      const w = Math.round(longEdge * rw/rh);
+      return {w, h};
+    }
+  }
+
+  function applyCanvasDims(){
+    const {w, h} = computeCanvasDims(PREVIEW_LONG_EDGE, state.aspectW, state.aspectH);
+    muralCanvas.width = w;
+    muralCanvas.height = h;
+    canvasWrap.style.aspectRatio = w + ' / ' + h;
+    if(state.layoutMode === 'mosaic') regenerateMosaic();
+  }
+
+  function buildRatioPresets(){
+    ratioPresetsEl.innerHTML = '';
+    Object.keys(RATIOS).forEach(key => {
+      const r = RATIOS[key];
+      const btn = document.createElement('button');
+      btn.className = 'preset-btn';
+      btn.innerHTML = r.label + '<small>' + r.hint + '</small>';
+      btn.dataset.key = key;
+      btn.addEventListener('click', () => {
+        state.aspectW = r.w; state.aspectH = r.h;
+        state.activeRatio = key;
+        customRatioInput.value = '';
+        highlightRatioPreset();
+        applyCanvasDims();
+        renderMural();
+      });
+      ratioPresetsEl.appendChild(btn);
+    });
+  }
+
+  function highlightRatioPreset(){
+    [...ratioPresetsEl.children].forEach(b => {
+      b.classList.toggle('active', b.dataset.key === state.activeRatio);
+    });
+  }
+
+  // Accepts "4:5", "1.91:1" or a plain decimal like "2.35" (treated as W:1).
+  function parseRatio(str){
+    str = (str || '').trim().replace(',', '.');
+    if(!str) return null;
+    let w, h;
+    if(str.includes(':')){
+      const parts = str.split(':');
+      w = parseFloat(parts[0]); h = parseFloat(parts[1]);
+    } else {
+      w = parseFloat(str); h = 1;
+    }
+    if(!isFinite(w) || !isFinite(h) || w <= 0 || h <= 0) return null;
+    return {w, h};
+  }
+
+  function applyCustomRatio(){
+    const parsed = parseRatio(customRatioInput.value);
+    if(!parsed){
+      customRatioInput.style.borderColor = 'var(--danger)';
+      setTimeout(() => { customRatioInput.style.borderColor = ''; }, 900);
+      return;
+    }
+    state.aspectW = parsed.w; state.aspectH = parsed.h;
+    state.activeRatio = null;
+    highlightRatioPreset();
+    applyCanvasDims();
+    renderMural();
+  }
+
+  customRatioBtn.addEventListener('click', applyCustomRatio);
+  customRatioInput.addEventListener('keydown', e => {
+    if(e.key === 'Enter') applyCustomRatio();
+  });
+
+  function sortImagesByUploadOrder(){
+    state.images.sort((a,b) => a.id - b.id);
+    state.mosaicLayout = null;
+    renderFilmstrip();
+    renderMural();
+  }
+
+  function shuffleImageOrder(){
+    for(let i = state.images.length - 1; i > 0; i--){
+      const j = Math.floor(Math.random() * (i+1));
+      [state.images[i], state.images[j]] = [state.images[j], state.images[i]];
+    }
+    state.mosaicLayout = null;
+    renderFilmstrip();
+    renderMural();
+  }
+
+  sortOrderBtn.addEventListener('click', sortImagesByUploadOrder);
+  shuffleOrderBtn.addEventListener('click', shuffleImageOrder);
+
+  blurToggle.addEventListener('click', () => {
+    state.blurBackground = !state.blurBackground;
+    blurToggle.classList.toggle('on', state.blurBackground);
+    renderMural();
+  });
+  blurAmountInput.addEventListener('input', () => {
+    state.blurAmount = parseInt(blurAmountInput.value, 10);
+    blurAmountVal.textContent = state.blurAmount;
+    renderMural();
+  });
+
+  function buildPresets(){
+    presetsEl.innerHTML = '';
+    presetsEl.insertAdjacentHTML('beforebegin', '<div class="presets-hint">O pontinho no canto de cada paleta decide se ela entra no sorteio do "Randomizar por foto".</div>');
+    Object.keys(PRESETS).forEach(key => {
+      const p = PRESETS[key];
+      const btn = document.createElement('button');
+      btn.className = 'preset-btn';
+      btn.innerHTML = p.label + '<small>' + p.hint + '</small>';
+      btn.addEventListener('click', () => applyPreset(key));
+      btn.dataset.key = key;
+
+      const dot = document.createElement('span');
+      dot.className = 'preset-random-dot' + (state.randomPool.has(key) ? '' : ' off');
+      dot.title = 'Incluir no aleatório';
+      dot.addEventListener('click', evt => {
+        evt.stopPropagation();
+        if(state.randomPool.has(key)) state.randomPool.delete(key);
+        else state.randomPool.add(key);
+        dot.classList.toggle('off', !state.randomPool.has(key));
+      });
+      btn.appendChild(dot);
+
+      presetsEl.appendChild(btn);
+    });
+  }
+
+  function applyPreset(key){
+    const p = PRESETS[key];
+    Object.assign(state.settings, p.v);
+    state.activePreset = key;
+    syncSliders();
+    highlightPreset();
+    reprocessAll();
+  }
+
+  function syncSliders(){
+    ['saturation','sepia','fade','split','balance','grain','vignette'].forEach(k => {
+      document.getElementById('s-'+k).value = state.settings[k];
+      document.getElementById('v-'+k).textContent = state.settings[k];
+    });
+  }
+
+  function highlightPreset(){
+    [...presetsEl.children].forEach(b => {
+      b.classList.toggle('active', b.dataset.key === state.activePreset);
+    });
+  }
+
+  ['saturation','sepia','fade','split','balance','grain','vignette'].forEach(k => {
+    const el = document.getElementById('s-'+k);
+    el.addEventListener('input', () => {
+      state.settings[k] = parseInt(el.value, 10);
+      document.getElementById('v-'+k).textContent = state.settings[k];
+      state.activePreset = null;
+      highlightPreset();
+      reprocessAll();
+    });
+  });
+
+  [['t-frame','showFrames'],['t-numbers','showNumbers']].forEach(([id,key]) => {
+    const el = document.getElementById(id);
+    el.addEventListener('click', () => {
+      state.settings[key] = !state.settings[key];
+      el.classList.toggle('on', state.settings[key]);
+      renderMural();
+    });
+  });
+
+  document.querySelectorAll('#layoutGroup .opt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#layoutGroup .opt-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.layoutMode = btn.dataset.layout;
+      mosaicControls.classList.toggle('show', state.layoutMode === 'mosaic');
+      if(state.layoutMode === 'mosaic' && !state.mosaicLayout){
+        regenerateMosaic();
+      }
+      renderMural();
+    });
+  });
+
+  document.querySelectorAll('#frameGroup .opt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#frameGroup .opt-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.frameStyle = btn.dataset.frame;
+      renderMural();
+    });
+  });
+
+  captionToggle.addEventListener('click', () => {
+    state.showCaptions = !state.showCaptions;
+    captionToggle.classList.toggle('on', state.showCaptions);
+    renderMural();
+  });
+
+  const NEUTRAL_SWATCHES = [
+    { hex:'#FFFFFF', title:'Branco puro' },
+    { hex:'#F4F1EA', title:'Branco suave' },
+    { hex:'#E8DCC5', title:'Creme' },
+    { hex:'#C9BFA9', title:'Bege' },
+    { hex:'#8A8378', title:'Cinza médio' },
+    { hex:'#3A352C', title:'Preto claro' },
+    { hex:'#221E17', title:'Preto médio' },
+    { hex:'#0F0C09', title:'Preto escuro' },
+    { hex:'#000000', title:'Preto puro' },
+  ];
+
+  function setMatColor(hex){
+    state.matColor = hex;
+    matColorInput.value = hex;
+    matColorHex.value = hex.toUpperCase();
+    [...matColorSwatches.children].forEach(b => {
+      b.classList.toggle('active', b.dataset.hex.toUpperCase() === hex.toUpperCase());
+    });
+    renderMural();
+  }
+
+  function buildMatColorSwatches(){
+    matColorSwatches.innerHTML = '';
+    NEUTRAL_SWATCHES.forEach(sw => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'swatch-btn';
+      b.style.background = sw.hex;
+      b.title = sw.title + ' (' + sw.hex + ')';
+      b.dataset.hex = sw.hex;
+      b.addEventListener('click', () => setMatColor(sw.hex));
+      matColorSwatches.appendChild(b);
+    });
+  }
+  buildMatColorSwatches();
+  setMatColor(state.matColor);
+
+  matColorInput.addEventListener('input', () => {
+    setMatColor(matColorInput.value);
+  });
+
+  function commitHexInput(){
+    let v = matColorHex.value.trim();
+    if(v && v[0] !== '#') v = '#'+v;
+    if(/^#([0-9A-Fa-f]{6})$/.test(v)){
+      setMatColor(v);
+    } else {
+      matColorHex.style.borderColor = 'var(--danger)';
+      setTimeout(() => { matColorHex.style.borderColor = ''; }, 900);
+      matColorHex.value = state.matColor.toUpperCase();
+    }
+  }
+  matColorHex.addEventListener('keydown', e => {
+    if(e.key === 'Enter') commitHexInput();
+  });
+  matColorHex.addEventListener('blur', commitHexInput);
+
+  shuffleBtn.addEventListener('click', () => {
+    regenerateMosaic();
+    renderMural();
+  });
+
+  document.getElementById('t-orientation').addEventListener('click', (e) => {
+    state.useOrientation = !state.useOrientation;
+    e.currentTarget.classList.toggle('on', state.useOrientation);
+    regenerateMosaic();
+    renderMural();
+  });
+
+  randomizeBtn.addEventListener('click', () => {
+    if(state.images.length === 0) return;
+    const keys = Object.keys(PRESETS).filter(k => state.randomPool.has(k));
+    const pool = keys.length ? keys : Object.keys(PRESETS);
+    const clamp = (v, min, max) => Math.min(max, Math.max(min, v));
+    const j = (spread) => (Math.random()*2-1)*spread;
+    state.images.forEach(entry => {
+      if(entry.excludeFromRandom) return;
+      const key = pool[Math.floor(Math.random()*pool.length)];
+      const base = PRESETS[key].v;
+      entry.filterMode = 'custom';
+      entry.customSettings = {
+        saturation: clamp(Math.round(base.saturation + j(20)), 0, 100),
+        sepia:    clamp(Math.round(base.sepia    + j(14)), 0, 100),
+        fade:     clamp(Math.round(base.fade     + j(14)), 0, 100),
+        split:    clamp(Math.round(base.split    + j(14)), 0, 100),
+        balance:  clamp(Math.round(base.balance  + j(20)), -100, 100),
+        grain:    clamp(Math.round(base.grain    + j(14)), 0, 100),
+        vignette: clamp(Math.round(base.vignette + j(14)), -100, 100)
+      };
+    });
+    reprocessAll();
+  });
+
+  resetFiltersBtn.addEventListener('click', () => {
+    if(state.images.length === 0) return;
+    state.images.forEach(entry => {
+      entry.filterMode = 'global';
+      entry.customSettings = null;
+    });
+    reprocessAll();
+  });
+
+  document.querySelectorAll('.size-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.size-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.exportSize = parseInt(btn.dataset.size, 10);
+    });
+  });
+
+  dropzone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', e => handleFiles(e.target.files));
+  ['dragenter','dragover'].forEach(ev => dropzone.addEventListener(ev, e => {
+    e.preventDefault(); dropzone.classList.add('drag');
+  }));
+  ['dragleave','drop'].forEach(ev => dropzone.addEventListener(ev, e => {
+    e.preventDefault(); dropzone.classList.remove('drag');
+  }));
+  dropzone.addEventListener('drop', e => handleFiles(e.dataTransfer.files));
+
+  const TRANSPARENT_PX = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBTAA7';
+
+  function handleFiles(fileList){
+    [...fileList].forEach(file => {
+      if(!file.type.startsWith('image/')) return;
+      // Create + insert the entry synchronously, in the exact order files were
+      // given, so upload order is preserved regardless of how fast each image
+      // decodes. The image data is filled in once it's actually ready.
+      const entry = {
+        id: nextId++, name: file.name, img: null, canvas: null, thumb: null,
+        caption: '', filterMode: 'global', customSettings: null, mosaicRotation: 0, excludeFromRandom: false,
+        cropOffset: {x:0, y:0}, loading: true
+      };
+      state.images.push(entry);
+      renderFilmstrip();
+
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const img = new Image();
+        img.onload = () => {
+          entry.img = img;
+          entry.loading = false;
+          processImage(entry);
+          state.mosaicLayout = null;
+          renderFilmstrip();
+          renderMural();
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function resolveSettings(entry){
+    if(!entry.filterMode || entry.filterMode === 'global') return state.settings;
+    if(entry.filterMode === 'custom' && entry.customSettings) return entry.customSettings;
+    if(PRESETS[entry.filterMode]) return PRESETS[entry.filterMode].v;
+    return state.settings;
+  }
+
+  function processImage(entry){
+    const img = entry.img;
+    let w = img.naturalWidth, h = img.naturalHeight;
+    const scale = Math.min(1, PROC_MAX / Math.max(w,h));
+    w = Math.round(w*scale); h = Math.round(h*scale);
+
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(img, 0, 0, w, h);
+
+    applyVintage(ctx, w, h, resolveSettings(entry));
+    entry.canvas = c;
+
+    const t = document.createElement('canvas');
+    t.width = 100; t.height = 100;
+    const tctx = t.getContext('2d');
+    const side = Math.min(w,h);
+    tctx.drawImage(c, (w-side)/2, (h-side)/2, side, side, 0, 0, 100, 100);
+    entry.thumb = t.toDataURL();
+  }
+
+  function reprocessAll(){
+    state.images.forEach(processImage);
+    renderFilmstrip();
+    renderMural();
+  }
+
+  function applyVintage(ctx, w, h, s){
+    const warm = [214, 158, 92];
+    const cool = [92, 131, 132];
+    const desatAmt = 1 - (s.saturation != null ? s.saturation : 0)/100;
+    const sepiaAmt = s.sepia/100;
+    const fadeAmt = s.fade/100;
+    const splitAmt = s.split/100;
+    const balance = s.balance/100;
+    const grainAmt = s.grain/100;
+    const contract = 0.5*fadeAmt;
+
+    const imgData = ctx.getImageData(0,0,w,h);
+    const data = imgData.data;
+
+    for(let i=0;i<data.length;i+=4){
+      let r = data[i], g = data[i+1], b = data[i+2];
+      const gray = 0.299*r + 0.587*g + 0.114*b;
+
+      // Desaturation blends the real color toward grayscale before anything
+      // else runs. At 0 (Foto original) the photo's own colors stay as the
+      // base for fade/split/balance/grain below; at 100 it's identical to
+      // the classic black & white pipeline.
+      const mr = r + (gray-r)*desatAmt;
+      const mg = g + (gray-g)*desatAmt;
+      const mb = b + (gray-b)*desatAmt;
+
+      const fadeChannel = v => {
+        let f = (v-128)*(1-contract) + 128;
+        f = f*(1-fadeAmt*0.12) + 34*fadeAmt;
+        return Math.min(255, Math.max(0, f));
+      };
+      const fr = fadeChannel(mr), fg = fadeChannel(mg), fb = fadeChannel(mb);
+      const faded = 0.299*fr + 0.587*fg + 0.114*fb;
+
+      let sr = Math.min(255, faded*1.07);
+      let sg = Math.min(255, faded*0.94);
+      let sb = Math.min(255, faded*0.74);
+
+      let br = fr*(1-sepiaAmt) + sr*sepiaAmt;
+      let bg = fg*(1-sepiaAmt) + sg*sepiaAmt;
+      let bb = fb*(1-sepiaAmt) + sb*sepiaAmt;
+
+      const shadowW = Math.max(0, (128-faded)/128) * splitAmt;
+      const highW = Math.max(0, (faded-128)/128) * splitAmt;
+
+      br += cool[0]*shadowW*0.45 + warm[0]*highW*0.45;
+      bg += cool[1]*shadowW*0.45 + warm[1]*highW*0.45;
+      bb += cool[2]*shadowW*0.45 + warm[2]*highW*0.45;
+
+      if(balance !== 0){
+        const tint = balance > 0 ? warm : cool;
+        const amt = Math.abs(balance)*0.35;
+        br += (tint[0]-128)*amt*0.3;
+        bg += (tint[1]-128)*amt*0.3;
+        bb += (tint[2]-128)*amt*0.3;
+      }
+
+      if(grainAmt > 0){
+        const noise = (Math.random()-0.5)*grainAmt*45;
+        br += noise; bg += noise; bb += noise;
+      }
+
+      data[i]   = Math.min(255, Math.max(0, br));
+      data[i+1] = Math.min(255, Math.max(0, bg));
+      data[i+2] = Math.min(255, Math.max(0, bb));
+    }
+    ctx.putImageData(imgData, 0, 0);
+
+    if(s.vignette){
+      const vAmt = Math.abs(s.vignette)/100;
+      const isLight = s.vignette < 0;
+      const cx = w/2, cy = h/2;
+      const radius = Math.sqrt(cx*cx+cy*cy);
+      const grad = ctx.createRadialGradient(cx, cy, radius*0.35, cx, cy, radius);
+      const rgb = isLight ? '255,255,255' : '0,0,0';
+      grad.addColorStop(0, 'rgba('+rgb+',0)');
+      grad.addColorStop(1, 'rgba('+rgb+','+(0.55*vAmt)+')');
+      ctx.globalCompositeOperation = isLight ? 'screen' : 'multiply';
+      ctx.fillStyle = grad;
+      ctx.fillRect(0,0,w,h);
+      ctx.globalCompositeOperation = 'source-over';
+    }
+  }
+
+  function renderFilmstrip(){
+    filmstrip.innerHTML = '';
+    state.images.forEach((entry, idx) => {
+      const row = document.createElement('div');
+      row.className = 'frame-item';
+      row.draggable = true;
+      row.dataset.id = entry.id;
+
+      const top = document.createElement('div');
+      top.className = 'row-top';
+      top.innerHTML =
+        '<span class="fnum">N°'+String(idx+1).padStart(2,'0')+'</span>'+
+        '<img src="'+(entry.thumb || TRANSPARENT_PX)+'" style="'+(entry.thumb ? '' : 'opacity:.3;')+'">'+
+        '<span class="fname">'+entry.name+(entry.loading ? ' · carregando…' : '')+'</span>'+
+        '<button class="mini-lock'+(entry.excludeFromRandom ? ' active' : '')+'" title="Não incluir esta foto no aleatório">⚿</button>'+
+        '<button class="mini-star'+(entry.isOverlay ? ' active' : '')+'" title="Destacar como camada por cima">✦</button>'+
+        '<button title="Remover">×</button>';
+      top.querySelector('button.mini-lock').addEventListener('click', () => {
+        entry.excludeFromRandom = !entry.excludeFromRandom;
+        renderFilmstrip();
+      });
+      top.querySelector('button.mini-star').addEventListener('click', () => {
+        entry.isOverlay = !entry.isOverlay;
+        if(entry.isOverlay){
+          if(entry.overlayX == null) entry.overlayX = 0.5 + (Math.random()*0.16 - 0.08);
+          if(entry.overlayY == null) entry.overlayY = 0.5 + (Math.random()*0.16 - 0.08);
+          if(entry.overlayScale == null) entry.overlayScale = 0.55;
+          if(entry.overlayRotation == null) entry.overlayRotation = Math.round(Math.random()*10 - 5);
+        }
+        state.mosaicLayout = null;
+        renderFilmstrip();
+        renderMural();
+      });
+      top.querySelector('button[title="Remover"]').addEventListener('click', () => {
+        state.images = state.images.filter(e => e.id !== entry.id);
+        state.mosaicLayout = null;
+        renderFilmstrip(); renderMural();
+      });
+      row.appendChild(top);
+
+      const extra = document.createElement('div');
+      extra.className = 'row-extra';
+
+      const capInput = document.createElement('input');
+      capInput.className = 'mini-input';
+      capInput.type = 'text';
+      capInput.placeholder = 'Legenda…';
+      capInput.value = entry.caption || '';
+      capInput.addEventListener('input', () => {
+        entry.caption = capInput.value;
+        renderMural();
+      });
+      extra.appendChild(capInput);
+
+      const sel = document.createElement('select');
+      sel.className = 'mini-select';
+      const optGlobal = document.createElement('option');
+      optGlobal.value = 'global'; optGlobal.textContent = 'Automático';
+      optGlobal.title = 'Segue os sliders da Paleta em tempo real';
+      sel.appendChild(optGlobal);
+      Object.keys(PRESETS).forEach(key => {
+        const opt = document.createElement('option');
+        opt.value = key; opt.textContent = PRESETS[key].label;
+        sel.appendChild(opt);
+      });
+      if(entry.filterMode === 'custom'){
+        const opt = document.createElement('option');
+        opt.value = 'custom'; opt.textContent = 'Randômico ✦';
+        sel.appendChild(opt);
+        sel.value = 'custom';
+        sel.classList.add('is-custom');
+      } else if(!entry.filterMode || entry.filterMode === 'global'){
+        sel.value = 'global';
+        sel.classList.add('is-global');
+      } else {
+        sel.value = entry.filterMode;
+      }
+      sel.addEventListener('change', () => {
+        if(sel.value === 'custom') return;
+        entry.filterMode = sel.value;
+        entry.customSettings = null;
+        processImage(entry);
+        renderFilmstrip();
+        renderMural();
+      });
+      extra.appendChild(sel);
+      row.appendChild(extra);
+
+      if(entry.isOverlay){
+        const ov = document.createElement('div');
+        ov.className = 'row-overlay';
+
+        const sizeRow = document.createElement('div');
+        sizeRow.className = 'mini-slider-row';
+        const sizeInput = document.createElement('input');
+        sizeInput.type = 'range'; sizeInput.min = '15'; sizeInput.max = '100';
+        sizeInput.value = String(Math.round((entry.overlayScale != null ? entry.overlayScale : 0.55)*100));
+        const sizeVal = document.createElement('span');
+        sizeVal.className = 'mini-val';
+        sizeVal.textContent = sizeInput.value + '%';
+        sizeInput.addEventListener('input', () => {
+          entry.overlayScale = parseInt(sizeInput.value, 10)/100;
+          sizeVal.textContent = sizeInput.value + '%';
+          renderMural();
+        });
+        sizeRow.innerHTML = '<span>Tamanho</span>';
+        sizeRow.appendChild(sizeInput);
+        sizeRow.appendChild(sizeVal);
+
+        const rotRow = document.createElement('div');
+        rotRow.className = 'mini-slider-row';
+        const rotInput = document.createElement('input');
+        rotInput.type = 'range'; rotInput.min = '-45'; rotInput.max = '45';
+        rotInput.value = String(Math.round(entry.overlayRotation || 0));
+        const rotVal = document.createElement('span');
+        rotVal.className = 'mini-val';
+        rotVal.textContent = rotInput.value + '°';
+        rotInput.addEventListener('input', () => {
+          entry.overlayRotation = parseInt(rotInput.value, 10);
+          rotVal.textContent = rotInput.value + '°';
+          renderMural();
+        });
+        rotRow.innerHTML = '<span>Rotação</span>';
+        rotRow.appendChild(rotInput);
+        rotRow.appendChild(rotVal);
+
+        ov.appendChild(sizeRow);
+        ov.appendChild(rotRow);
+        row.appendChild(ov);
+
+        [sizeInput, rotInput].forEach(el => {
+          el.addEventListener('mousedown', () => { row.draggable = false; });
+          el.addEventListener('mouseup', () => { row.draggable = true; });
+        });
+      }
+
+      [capInput, sel].forEach(el => {
+        el.addEventListener('mousedown', () => { row.draggable = false; });
+        el.addEventListener('mouseup', () => { row.draggable = true; });
+      });
+
+      row.addEventListener('dragstart', () => row.classList.add('dragging'));
+      row.addEventListener('dragend', () => { row.classList.remove('dragging'); renderMural(); });
+      row.addEventListener('dragover', e => {
+        e.preventDefault();
+        const dragging = filmstrip.querySelector('.dragging');
+        if(!dragging || dragging === row) return;
+        const rect = row.getBoundingClientRect();
+        const before = e.clientY < rect.top + rect.height/2;
+        filmstrip.insertBefore(dragging, before ? row : row.nextSibling);
+      });
+      filmstrip.appendChild(row);
+    });
+
+    filmstrip.addEventListener('drop', () => {
+      const order = [...filmstrip.children].map(el => parseInt(el.dataset.id,10));
+      state.images.sort((a,b) => order.indexOf(a.id) - order.indexOf(b.id));
+    }, { once:true });
+
+    frameCount.textContent = String(state.images.length).padStart(2,'0') + ' QUADROS';
+    downloadBtn.disabled = state.images.length === 0;
+    updatePaletteLiveCount();
+  }
+
+  function updatePaletteLiveCount(){
+    const el = document.getElementById('paletteLiveCount');
+    if(!el) return;
+    const total = state.images.length;
+    if(total === 0){ el.textContent = ''; return; }
+    const liveCount = state.images.filter(e => !e.filterMode || e.filterMode === 'global').length;
+    if(liveCount === total){
+      el.innerHTML = 'Os sliders abaixo ajustam <strong>todas as '+total+' fotos</strong> (todas em modo Automático).';
+    } else if(liveCount === 0){
+      el.innerHTML = 'Os sliders abaixo <strong>não afetam nenhuma foto</strong> agora — todas têm uma paleta fixa ou são do Randômico. Troque uma foto para "Automático" no seletor dela pra ligá-la aos sliders.';
+    } else {
+      el.innerHTML = 'Os sliders abaixo ajustam <strong>'+liveCount+' de '+total+' fotos</strong> (as que estão em "Automático" — destacadas em <strong style="color:var(--teal)">verde-azulado</strong> no seletor de cada foto).';
+    }
+  }
+
+  function computeGrid(n, aspect){
+    if(n <= 0) return {cols:1, rows:1};
+    aspect = aspect || 1;
+    let best = null;
+    const approx = Math.sqrt(n*aspect);
+    for(let cols = Math.max(1, Math.floor(approx)-2); cols <= Math.ceil(approx)+3; cols++){
+      if(cols < 1) continue;
+      const rows = Math.ceil(n/cols);
+      const empty = cols*rows - n;
+      const skew = Math.abs((cols/rows) - aspect);
+      const score = empty*10 + skew;
+      if(!best || score < best.score) best = {cols, rows, score};
+    }
+    return best;
+  }
+
+  function truncateText(ctx, text, maxW){
+    if(ctx.measureText(text).width <= maxW) return text;
+    let t = text;
+    while(t.length > 1 && ctx.measureText(t+'…').width > maxW){ t = t.slice(0, -1); }
+    return t + '…';
+  }
+
+  // Given the allotted box size, returns the inner image-drawing rect
+  // (accounts for polaroid mat + caption strip). Shared by drawing and hit-testing.
+  function computeImageArea(w, h){
+    const polaroid = state.frameStyle === 'polaroid';
+    const mat = polaroid ? Math.round(Math.min(w,h)*0.05) : 0;
+    const bottomStrip = polaroid ? Math.round(Math.min(w,h)*0.16) : 0;
+    const imgX = polaroid ? mat : 0;
+    const imgY = polaroid ? mat : 0;
+    const imgW = polaroid ? (w - mat*2) : w;
+    const imgH = polaroid ? (h - mat - bottomStrip) : h;
+    return {imgX, imgY, imgW, imgH, mat, bottomStrip, polaroid};
+  }
+
+  // Draws one photo (with optional polaroid mat + caption + number) into a box.
+  // x,y = top-left of the allotted box; w,h = box size; rotation in radians.
+  // isOverlayLayer marks this as a highlighted "cut out" photo floating above
+  // the background — it always gets a soft drop shadow so it reads as lifted.
+  function drawFramedPhoto(ctx, entry, idx, x, y, w, h, rotation, isOverlayLayer){
+    rotation = rotation || 0;
+    ctx.save();
+    const cx = x + w/2, cy = y + h/2;
+    ctx.translate(cx, cy);
+    ctx.rotate(rotation);
+    ctx.translate(-w/2, -h/2);
+
+    const polaroid = state.frameStyle === 'polaroid';
+    const captionOn = state.showCaptions && entry.caption && entry.caption.trim().length > 0;
+    const area = computeImageArea(w, h);
+    const mat = area.mat, bottomStrip = area.bottomStrip;
+
+    if(polaroid){
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.45)';
+      ctx.shadowBlur = Math.max(4, Math.min(w,h)*0.03);
+      ctx.shadowOffsetY = Math.max(2, Math.min(w,h)*0.012);
+      ctx.fillStyle = '#EFE7D6';
+      ctx.fillRect(0, 0, w, h);
+      ctx.restore();
+    }
+
+    const imgX = area.imgX, imgY = area.imgY, imgW = area.imgW, imgH = area.imgH;
+
+    const src = entry.canvas;
+    const sw = src.width, sh = src.height;
+    const srcAspect = sw/sh, cellAspect = imgW/imgH;
+    const off = entry.cropOffset || {x:0, y:0};
+    let sx, sy, sWidth, sHeight;
+    if(srcAspect > cellAspect){
+      sHeight = sh; sWidth = sh*cellAspect;
+      const slackX = sw - sWidth;
+      sx = slackX/2 + off.x*(slackX/2);
+      sx = Math.min(slackX, Math.max(0, sx));
+      sy = 0;
+    } else {
+      sWidth = sw; sHeight = sw/cellAspect;
+      const slackY = sh - sHeight;
+      sy = slackY/2 + off.y*(slackY/2);
+      sy = Math.min(slackY, Math.max(0, sy));
+      sx = 0;
+    }
+
+    if(isOverlayLayer && !polaroid){
+      ctx.save();
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = Math.max(6, Math.min(w,h)*0.06);
+      ctx.shadowOffsetY = Math.max(3, Math.min(w,h)*0.025);
+      ctx.drawImage(src, sx, sy, sWidth, sHeight, imgX, imgY, imgW, imgH);
+      ctx.restore();
+    } else {
+      ctx.drawImage(src, sx, sy, sWidth, sHeight, imgX, imgY, imgW, imgH);
+    }
+
+    if(polaroid){
+      ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(imgX+0.5, imgY+0.5, imgW-1, imgH-1);
+    } else if(state.settings.showFrames){
+      ctx.strokeStyle = 'rgba(232,220,197,0.15)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(0.5, 0.5, w-1, h-1);
+    }
+
+    if(state.settings.showNumbers){
+      const label = 'N°'+String(idx+1).padStart(2,'0');
+      const fontSize = Math.max(10, Math.round(Math.min(w,h)*0.045));
+      ctx.font = fontSize+'px "Special Elite", monospace';
+      if(polaroid){
+        ctx.fillStyle = 'rgba(20,17,14,0.6)';
+        ctx.fillText(label, imgX+3, imgY+fontSize+3);
+      } else {
+        const padding = fontSize*0.6;
+        const textW = ctx.measureText(label).width;
+        ctx.fillStyle = 'rgba(15,12,9,0.55)';
+        ctx.fillRect(padding*0.4, h-fontSize-padding*1.1, textW+padding, fontSize+padding*0.6);
+        ctx.fillStyle = 'rgba(232,220,197,0.85)';
+        ctx.fillText(label, padding*0.8, h-padding*0.9);
+      }
+    }
+
+    if(captionOn){
+      const fontSize = Math.max(11, Math.round(Math.min(w,h)*0.055));
+      ctx.font = fontSize+'px "Special Elite", monospace';
+      ctx.textAlign = 'center';
+      if(polaroid){
+        ctx.fillStyle = '#2A2118';
+        ctx.fillText(truncateText(ctx, entry.caption, w-mat*2), w/2, h-bottomStrip/2+fontSize*0.32);
+      } else {
+        const barH = fontSize + 10;
+        ctx.fillStyle = 'rgba(15,12,9,0.55)';
+        ctx.fillRect(0, 0, w, barH);
+        ctx.fillStyle = 'rgba(232,220,197,0.9)';
+        ctx.fillText(truncateText(ctx, entry.caption, w-16), w/2, barH*0.68);
+      }
+      ctx.textAlign = 'left';
+    }
+
+    ctx.restore();
+  }
+
+  function renderGridLayout(ctx, width, height){
+    const images = state.images.filter(e => e.canvas && !e.isOverlay);
+    const n = images.length;
+    if(n === 0) return;
+    const {cols, rows} = computeGrid(n, width/height);
+    layoutNote.textContent = 'GRADE ' + cols + ' × ' + rows + ' — ' + n + ' QUADROS';
+
+    const refSize = Math.min(width, height);
+    const gutter = (state.settings.showFrames || state.frameStyle === 'polaroid') ? Math.round(refSize*0.012) : 2;
+    const outerMargin = Math.round(refSize*0.018);
+    const innerW = width - outerMargin*2;
+    const innerH = height - outerMargin*2;
+
+    const cellW = (innerW - gutter*(cols+1)) / cols;
+    const cellH = (innerH - gutter*(rows+1)) / rows;
+
+    const fullRows = Math.floor(n/cols);
+    const lastRowCount = n - fullRows*cols;
+
+    images.forEach((entry, idx) => {
+      const row = Math.floor(idx/cols);
+      const col = idx % cols;
+      const isLastRow = row === rows-1 && lastRowCount !== 0 && lastRowCount !== cols;
+      const rowItemCount = isLastRow ? lastRowCount : cols;
+      const rowWidth = rowItemCount*cellW + (rowItemCount+1)*gutter;
+      const rowOffsetX = outerMargin + (innerW - rowWidth)/2;
+
+      const x = rowOffsetX + gutter + col*(cellW+gutter);
+      const y = outerMargin + gutter + row*(cellH+gutter);
+
+      drawFramedPhoto(ctx, entry, idx, x, y, cellW, cellH, 0);
+      state.lastBoxes.push({entry, idx, x, y, w:cellW, h:cellH, rotation:0, area: computeImageArea(cellW, cellH)});
+    });
+  }
+
+  // Classifies a photo's own aspect ratio so the mosaic can (optionally) match
+  // block shape to it: wide photos → wide blocks, tall photos → tall blocks.
+  function getOrientation(entry){
+    const src = entry.canvas || entry.img;
+    if(!src) return 'square';
+    const w = src.width || src.naturalWidth || 1;
+    const h = src.height || src.naturalHeight || 1;
+    const ratio = w / h;
+    if(ratio > 1.15) return 'landscape';
+    if(ratio < 0.87) return 'portrait';
+    return 'square';
+  }
+
+  // Returns ordered shape candidates for a given "size tier" (small/medium/large),
+  // biased toward the photo's own orientation when useOrientation is on. Order
+  // matters: the packer tries candidates left-to-right and falls back if a shape
+  // doesn't fit, so this is a preference, not a guarantee — keeps things organic.
+  function pickSizeCandidates(tier, orientation){
+    if(tier === 'small') return [[1,1]];
+    if(!state.useOrientation || orientation === 'square'){
+      if(tier === 'medium') return Math.random() < 0.5 ? [[1,2],[2,1],[1,1]] : [[2,1],[1,2],[1,1]];
+      return [[2,2],[1,2],[2,1],[1,1]];
+    }
+    if(orientation === 'landscape'){
+      if(tier === 'medium') return [[1,2],[2,1],[1,1]];
+      return [[2,2],[1,2],[2,1],[1,1]];
+    }
+    // portrait
+    if(tier === 'medium') return [[2,1],[1,2],[1,1]];
+    return [[2,2],[2,1],[1,2],[1,1]];
+  }
+
+  // Builds a variable-sized block layout on a fine grid: some photos take 1x1,
+  // some take a wider/taller 2x1/1x2, some a big 2x2 — irregular and organic.
+  // `aspect` (width/height of the mural) skews the grid so it isn't always square.
+  function generateMosaicLayout(n, images, aspect){
+    if(n <= 0) return {cols:1, rows:1, placements:[]};
+    aspect = aspect || 1;
+    const targetCells = Math.max(n, Math.round(n*1.45));
+    let cols = Math.max(3, Math.round(Math.sqrt(targetCells*1.25*aspect)));
+    let rows = Math.max(3, Math.ceil(targetCells/cols));
+    while(cols*rows < n) rows++;
+
+    let grid = [];
+    for(let r=0;r<rows;r++) grid.push(new Array(cols).fill(false));
+
+    function freeBlock(r,c,bh,bw){
+      if(r+bh>rows || c+bw>cols) return false;
+      for(let rr=r; rr<r+bh; rr++)
+        for(let cc=c; cc<c+bw; cc++)
+          if(grid[rr][cc]) return false;
+      return true;
+    }
+    function markBlock(r,c,bh,bw){
+      for(let rr=r; rr<r+bh; rr++)
+        for(let cc=c; cc<c+bw; cc++)
+          grid[rr][cc] = true;
+    }
+
+    const placements = [];
+    for(let idx=0; idx<n; idx++){
+      let placed = false;
+      const roll = Math.random();
+      const tier = roll < 0.5 ? 'small' : (roll < 0.8 ? 'medium' : 'large');
+      const orientation = images && images[idx] ? getOrientation(images[idx]) : 'square';
+      const sizeCandidates = pickSizeCandidates(tier, orientation);
+
+      for(const [bh,bw] of sizeCandidates){
+        if(placed) break;
+        for(let r=0; r<rows && !placed; r++){
+          for(let c=0; c<cols && !placed; c++){
+            if(freeBlock(r,c,bh,bw)){
+              markBlock(r,c,bh,bw);
+              placements.push({r,c,bh,bw});
+              placed = true;
+            }
+          }
+        }
+      }
+      if(!placed){
+        rows++;
+        grid.push(new Array(cols).fill(false));
+        markBlock(rows-1, 0, 1, 1);
+        placements.push({r:rows-1, c:0, bh:1, bw:1});
+      }
+    }
+    return {cols, rows, placements};
+  }
+
+  function regenerateMosaic(){
+    const images = state.images.filter(e => e.canvas && !e.isOverlay);
+    const aspect = muralCanvas.width / muralCanvas.height;
+    state.mosaicLayout = generateMosaicLayout(images.length, images, aspect);
+    images.forEach(entry => {
+      entry.mosaicRotation = (Math.random()*8 - 4);
+    });
+  }
+
+  function renderMosaicLayout(ctx, width, height){
+    const images = state.images.filter(e => e.canvas && !e.isOverlay);
+    const n = images.length;
+    if(n === 0) return;
+    if(!state.mosaicLayout || state.mosaicLayout.placements.length !== n){
+      regenerateMosaic();
+    }
+    const layout = state.mosaicLayout;
+    layoutNote.textContent = 'MOSAICO ORGÂNICO — ' + n + ' QUADROS';
+
+    const refSize = Math.min(width, height);
+    const outerMargin = Math.round(refSize*0.02);
+    const gutter = Math.round(refSize*0.01);
+    const innerW = width - outerMargin*2;
+    const innerH = height - outerMargin*2;
+    const cellW = (innerW - gutter*(layout.cols+1)) / layout.cols;
+    const cellH = (innerH - gutter*(layout.rows+1)) / layout.rows;
+
+    images.forEach((entry, idx) => {
+      const p = layout.placements[idx];
+      if(!p) return;
+      const x = outerMargin + gutter + p.c*(cellW+gutter);
+      const y = outerMargin + gutter + p.r*(cellH+gutter);
+      const w = p.bw*cellW + (p.bw-1)*gutter;
+      const h = p.bh*cellH + (p.bh-1)*gutter;
+      const rotation = (entry.mosaicRotation || 0) * Math.PI/180;
+      drawFramedPhoto(ctx, entry, idx, x, y, w, h, rotation);
+      state.lastBoxes.push({entry, idx, x, y, w, h, rotation, area: computeImageArea(w, h)});
+    });
+  }
+
+  // Computes the on-canvas box for a highlighted "layer" photo: it keeps its
+  // own natural aspect ratio (no cropping), sized as a fraction of the mural's
+  // shorter side, centered at its stored normalized position.
+  function computeOverlayBox(entry, width, height){
+    const src = entry.canvas;
+    const ratio = src.width / src.height;
+    const refSize = Math.min(width, height);
+    const scale = entry.overlayScale != null ? entry.overlayScale : 0.55;
+    const longSide = refSize * scale;
+    let w, h;
+    if(ratio >= 1){ w = longSide; h = longSide/ratio; }
+    else { h = longSide; w = longSide*ratio; }
+    const cx = (entry.overlayX != null ? entry.overlayX : 0.5) * width;
+    const cy = (entry.overlayY != null ? entry.overlayY : 0.5) * height;
+    return {
+      x: cx - w/2, y: cy - h/2, w, h,
+      rotation: (entry.overlayRotation || 0) * Math.PI/180
+    };
+  }
+
+  // Draws the highlighted layer photos on top, unaffected by background blur.
+  // startIdx keeps frame numbering continuous with the background photos.
+  function renderOverlays(ctx, width, height, startIdx){
+    const overlays = state.images.filter(e => e.canvas && e.isOverlay);
+    overlays.forEach((entry, i) => {
+      const box = computeOverlayBox(entry, width, height);
+      drawFramedPhoto(ctx, entry, startIdx+i, box.x, box.y, box.w, box.h, box.rotation, true);
+      state.lastBoxes.push({
+        entry, idx: startIdx+i, x: box.x, y: box.y, w: box.w, h: box.h,
+        rotation: box.rotation, area: computeImageArea(box.w, box.h), type: 'overlay'
+      });
+    });
+  }
+
+  function renderMural(){
+    const width = muralCanvas.width, height = muralCanvas.height;
+    const ctx = muralCanvas.getContext('2d');
+    ctx.clearRect(0,0,width,height);
+    state.lastBoxes = [];
+
+    if(state.images.length === 0){
+      emptyState.style.display = 'block';
+      layoutNote.textContent = (state.layoutMode === 'mosaic' ? 'MOSAICO' : 'GRADE') + ' — · —';
+      return;
+    }
+    emptyState.style.display = 'none';
+
+    // Background (grid/mosaic of non-highlighted photos) is drawn to an
+    // offscreen buffer first, so it can optionally be blurred without
+    // affecting the highlighted layer photos drawn on top afterward.
+    const bg = document.createElement('canvas');
+    bg.width = width; bg.height = height;
+    const bgCtx = bg.getContext('2d');
+    bgCtx.fillStyle = state.matColor;
+    bgCtx.fillRect(0,0,width,height);
+
+    if(state.layoutMode === 'mosaic'){
+      renderMosaicLayout(bgCtx, width, height);
+    } else {
+      renderGridLayout(bgCtx, width, height);
+    }
+
+    ctx.save();
+    if(state.blurBackground && state.blurAmount > 0){
+      const refSize = Math.min(width, height);
+      const blurPx = (state.blurAmount/100) * refSize * 0.05;
+      ctx.filter = 'blur(' + blurPx + 'px)';
+    }
+    ctx.drawImage(bg, 0, 0);
+    ctx.restore();
+
+    const bgCount = state.images.filter(e => e.canvas && !e.isOverlay).length;
+    renderOverlays(ctx, width, height, bgCount);
+
+    const refSize = Math.min(width, height);
+    const outerMargin = Math.round(refSize*0.018);
+    if(state.settings.showFrames){
+      ctx.strokeStyle = 'rgba(232,220,197,0.25)';
+      ctx.lineWidth = Math.max(2, refSize*0.003);
+      ctx.strokeRect(outerMargin/2, outerMargin/2, width-outerMargin, height-outerMargin);
+    }
+  }
+
+  // --- Drag-to-reposition crop, directly on the mural canvas ---
+
+  function clamp(v, min, max){ return Math.min(max, Math.max(min, v)); }
+
+  function canvasPointFromEvent(evt){
+    const rect = muralCanvas.getBoundingClientRect();
+    const t = evt.touches && evt.touches[0];
+    const clientX = t ? t.clientX : evt.clientX;
+    const clientY = t ? t.clientY : evt.clientY;
+    const scaleX = muralCanvas.width / rect.width;
+    const scaleY = muralCanvas.height / rect.height;
+    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+  }
+
+  function pointInBox(px, py, box){
+    const cx = box.x + box.w/2, cy = box.y + box.h/2;
+    const dx = px - cx, dy = py - cy;
+    const rot = -box.rotation;
+    const rx = dx*Math.cos(rot) - dy*Math.sin(rot);
+    const ry = dx*Math.sin(rot) + dy*Math.cos(rot);
+    const localX = rx + box.w/2, localY = ry + box.h/2;
+    return localX >= 0 && localX <= box.w && localY >= 0 && localY <= box.h;
+  }
+
+  function findBoxAt(px, py){
+    for(let i = state.lastBoxes.length - 1; i >= 0; i--){
+      if(pointInBox(px, py, state.lastBoxes[i])) return state.lastBoxes[i];
+    }
+    return null;
+  }
+
+  let dragState = null;
+
+  function startDrag(evt){
+    if(state.images.length === 0) return;
+    const pt = canvasPointFromEvent(evt);
+    const box = findBoxAt(pt.x, pt.y);
+    if(!box) return;
+    evt.preventDefault();
+    const entry = box.entry;
+    if(box.type === 'overlay'){
+      dragState = {
+        kind: 'overlay', entry,
+        startPt: pt,
+        startX: entry.overlayX != null ? entry.overlayX : 0.5,
+        startY: entry.overlayY != null ? entry.overlayY : 0.5
+      };
+    } else {
+      if(!entry.cropOffset) entry.cropOffset = {x:0, y:0};
+      dragState = {
+        kind: 'crop', entry, box,
+        startPt: pt,
+        startOffset: { x: entry.cropOffset.x, y: entry.cropOffset.y }
+      };
+    }
+    muralCanvas.classList.add('dragging');
+  }
+
+  function moveDrag(evt){
+    if(!dragState) return;
+    evt.preventDefault();
+    const pt = canvasPointFromEvent(evt);
+    const dx = pt.x - dragState.startPt.x;
+    const dy = pt.y - dragState.startPt.y;
+
+    if(dragState.kind === 'overlay'){
+      const entry = dragState.entry;
+      entry.overlayX = clamp(dragState.startX + dx/muralCanvas.width, 0, 1);
+      entry.overlayY = clamp(dragState.startY + dy/muralCanvas.height, 0, 1);
+      renderMural();
+      return;
+    }
+
+    const rot = -dragState.box.rotation;
+    const localDx = dx*Math.cos(rot) - dy*Math.sin(rot);
+    const localDy = dx*Math.sin(rot) + dy*Math.cos(rot);
+
+    const area = dragState.box.area;
+    const entry = dragState.entry;
+    const src = entry.canvas;
+    const sw = src.width, sh = src.height;
+    const cellAspect = area.imgW / area.imgH;
+    const srcAspect = sw / sh;
+
+    let newOffX = dragState.startOffset.x, newOffY = dragState.startOffset.y;
+    if(srcAspect > cellAspect){
+      const sWidth = sh*cellAspect;
+      const slackX = sw - sWidth;
+      if(slackX > 0){
+        const scale = area.imgW / sWidth;
+        newOffX = clamp(dragState.startOffset.x + (-localDx/scale)/(slackX/2), -1, 1);
+      }
+      newOffY = 0;
+    } else {
+      const sHeight = sw/cellAspect;
+      const slackY = sh - sHeight;
+      if(slackY > 0){
+        const scale = area.imgH / sHeight;
+        newOffY = clamp(dragState.startOffset.y + (-localDy/scale)/(slackY/2), -1, 1);
+      }
+      newOffX = 0;
+    }
+    entry.cropOffset = { x:newOffX, y:newOffY };
+    renderMural();
+  }
+
+  function endDrag(){
+    if(dragState){
+      dragState = null;
+      muralCanvas.classList.remove('dragging');
+    }
+  }
+
+  muralCanvas.addEventListener('mousedown', startDrag);
+  muralCanvas.addEventListener('touchstart', startDrag, { passive:false });
+  document.addEventListener('mousemove', moveDrag);
+  document.addEventListener('touchmove', moveDrag, { passive:false });
+  document.addEventListener('mouseup', endDrag);
+  document.addEventListener('touchend', endDrag);
+
+  muralCanvas.addEventListener('dblclick', evt => {
+    const pt = canvasPointFromEvent(evt);
+    const box = findBoxAt(pt.x, pt.y);
+    if(!box) return;
+    if(box.type === 'overlay'){
+      box.entry.overlayX = 0.5;
+      box.entry.overlayY = 0.5;
+    } else {
+      box.entry.cropOffset = { x:0, y:0 };
+    }
+    renderMural();
+  });
+
+  downloadBtn.addEventListener('click', () => {
+    const {w, h} = computeCanvasDims(state.exportSize, state.aspectW, state.aspectH);
+    const savedW = muralCanvas.width, savedH = muralCanvas.height;
+    muralCanvas.width = w; muralCanvas.height = h;
+    renderMural();
+    muralCanvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'mural-revelado.png';
+      a.click();
+      URL.revokeObjectURL(url);
+      muralCanvas.width = savedW; muralCanvas.height = savedH;
+      renderMural();
+    }, 'image/png');
+  });
+
+  buildPresets();
+  applyPreset('sepia');
+  buildRatioPresets();
+  highlightRatioPreset();
+  applyCanvasDims();
+  renderMural();
+})();
+</script>
+</body>
+</html>
