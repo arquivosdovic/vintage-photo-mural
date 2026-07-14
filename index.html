@@ -1122,6 +1122,15 @@
   }));
   dropzone.addEventListener('drop', e => handleFiles(e.dataTransfer.files));
 
+  // Persists the drag-reorder from the filmstrip into state.images. Attached
+  // once, permanently, on the filmstrip element itself (which is never
+  // recreated — only its contents are rebuilt by renderFilmstrip), so
+  // reordering keeps working on every drag, not just the first one.
+  filmstrip.addEventListener('drop', () => {
+    const order = [...filmstrip.children].map(el => parseInt(el.dataset.id,10));
+    state.images.sort((a,b) => order.indexOf(a.id) - order.indexOf(b.id));
+  });
+
   const TRANSPARENT_PX = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBTAA7';
 
   function handleFiles(fileList){
@@ -1427,11 +1436,6 @@
       });
       filmstrip.appendChild(row);
     });
-
-    filmstrip.addEventListener('drop', () => {
-      const order = [...filmstrip.children].map(el => parseInt(el.dataset.id,10));
-      state.images.sort((a,b) => order.indexOf(a.id) - order.indexOf(b.id));
-    }, { once:true });
 
     frameCount.textContent = String(state.images.length).padStart(2,'0') + ' QUADROS';
     downloadBtn.disabled = state.images.length === 0;
@@ -1768,9 +1772,26 @@
     const refSize = Math.min(width, height);
     const scale = entry.overlayScale != null ? entry.overlayScale : 0.55;
     const longSide = refSize * scale;
-    let w, h;
-    if(ratio >= 1){ w = longSide; h = longSide/ratio; }
-    else { h = longSide; w = longSide*ratio; }
+    let imgW, imgH;
+    if(ratio >= 1){ imgW = longSide; imgH = longSide/ratio; }
+    else { imgH = longSide; imgW = longSide*ratio; }
+
+    // Photo size is fixed first (imgW/imgH, at the chosen scale, preserving
+    // its own aspect ratio). The outer box is then grown to fit the polaroid
+    // mat + caption strip *around* it, so the frame never crops into the
+    // photo itself. Solved by a few fixed-point iterations since mat/strip
+    // are proportional to the outer box's own shorter side.
+    let w = imgW, h = imgH;
+    if(state.frameStyle === 'polaroid'){
+      for(let i=0; i<4; i++){
+        const m = Math.min(w,h);
+        const mat = Math.round(m*0.05);
+        const bottomStrip = Math.round(m*0.16);
+        w = imgW + mat*2;
+        h = imgH + mat + bottomStrip;
+      }
+    }
+
     const cx = (entry.overlayX != null ? entry.overlayX : 0.5) * width;
     const cy = (entry.overlayY != null ? entry.overlayY : 0.5) * height;
     return {
