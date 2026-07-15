@@ -264,6 +264,9 @@
     cursor:grab;
   }
   .frame-item.dragging{opacity:0.4;}
+  .frame-item.is-live{border-color:var(--teal);}
+  .frame-item.is-locked{opacity:0.62;}
+  .frame-item.is-focused{border-color:var(--amber);box-shadow:0 0 0 1px var(--amber-dim) inset;opacity:1;}
   .frame-item .row-top{
     display:flex;
     align-items:center;
@@ -306,6 +309,9 @@
   .frame-item button.mini-lock{font-size:12px;color:var(--text-dim);opacity:.45;}
   .frame-item button.mini-lock:hover{opacity:1;}
   .frame-item button.mini-lock.active{color:var(--danger);opacity:1;}
+  .frame-item button.mini-focus{font-size:12px;color:var(--text-dim);opacity:.45;}
+  .frame-item button.mini-focus:hover{opacity:1;color:var(--amber);}
+  .frame-item button.mini-focus.active{color:var(--amber);opacity:1;}
   .row-overlay{
     display:flex;
     flex-direction:column;
@@ -480,8 +486,26 @@
     background:var(--panel-2);
     border:1px solid var(--border);
     border-radius:4px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    flex-wrap:wrap;
   }
   .palette-live-count strong{color:var(--teal);font-weight:600;}
+  .palette-live-count.is-focus-banner{border-color:var(--amber-dim);background:rgba(192,138,69,0.08);}
+  .focus-exit-btn{
+    background:var(--panel);
+    border:1px solid var(--amber-dim);
+    color:var(--amber);
+    font-size:11px;
+    padding:4px 9px;
+    border-radius:3px;
+    cursor:pointer;
+    flex-shrink:0;
+    white-space:nowrap;
+  }
+  .focus-exit-btn:hover{border-color:var(--amber);}
   .drag-hint{
     font-size:11.5px;
     color:var(--text-dim);
@@ -747,6 +771,7 @@
     images: [],
     settings: { saturation:0, sepia:0, fade:0, split:0, balance:0, grain:0, vignette:0, showFrames:true, showNumbers:true },
     activePreset: null,
+    focusId: null,
     randomPool: null,
     exportSize: 1600,
     layoutMode: 'grid',
@@ -785,7 +810,14 @@
   };
   state.randomPool = new Set(Object.keys(PRESETS));
 
+  // PROC_MAX: resolution used for the live-editing working copy (srcCanvas).
+  // Kept small on purpose — it's what stays resident in memory per photo
+  // while editing, and every slider/preset change redraws from it.
   const PROC_MAX = 900;
+  // EXPORT_PROC_MAX: resolution decoded fresh from the original file, but
+  // only once, at the moment of download — never kept resident. Matches the
+  // largest export size offered so exports don't look upscaled/blurry.
+  const EXPORT_PROC_MAX = 3200;
   let nextId = 1;
 
   const filmstrip = document.getElementById('filmstrip');
@@ -957,19 +989,41 @@
     });
   }
 
+  // Returns the currently-focused entry, or null if none / it no longer exists
+  // (e.g. it was removed from the filmstrip while focused).
+  function getFocusedEntry(){
+    if(!state.focusId) return null;
+    const entry = state.images.find(e => e.id === state.focusId);
+    if(!entry){ state.focusId = null; return null; }
+    return entry;
+  }
+
   function applyPreset(key){
     const p = PRESETS[key];
-    Object.assign(state.settings, p.v);
+    const focused = getFocusedEntry();
     state.activePreset = key;
+    if(focused){
+      focused.customSettings = {...p.v};
+      syncSliders(focused.customSettings);
+      highlightPreset();
+      processImage(focused);
+      renderFilmstrip();
+      renderMural();
+      return;
+    }
+    Object.assign(state.settings, p.v);
     syncSliders();
     highlightPreset();
     reprocessAll();
   }
 
-  function syncSliders(){
+  // source: which settings object the sliders should currently display —
+  // state.settings (global) by default, or a focused entry's customSettings.
+  function syncSliders(source){
+    const s = source || state.settings;
     ['saturation','sepia','fade','split','balance','grain','vignette'].forEach(k => {
-      document.getElementById('s-'+k).value = state.settings[k];
-      document.getElementById('v-'+k).textContent = state.settings[k];
+      document.getElementById('s-'+k).value = s[k];
+      document.getElementById('v-'+k).textContent = s[k];
     });
   }
 
@@ -979,14 +1033,68 @@
     });
   }
 
+  // Enters/exits "focus" mode for one photo: while focused, the Paleta
+  // sliders and presets edit only that photo (its own customSettings),
+  // completely isolated from the global settings every other photo may
+  // still be following.
+  function toggleFocus(entry){
+    if(state.focusId === entry.id){
+      exitFocus();
+      return;
+    }
+    state.focusId = entry.id;
+    entry.filterMode = 'custom';
+    entry.customSettings = entry.customSettings ? {...entry.customSettings} : {...resolveSettings(entry)};
+    state.activePreset = null;
+    syncSliders(entry.customSettings);
+    highlightPreset();
+    processImage(entry);
+    renderFilmstrip();
+    renderMural();
+  }
+
+  function exitFocus(){
+    state.focusId = null;
+    syncSliders(state.settings);
+    highlightPreset();
+    renderFilmstrip();
+    renderMural();
+  }
+
+  // Sliders fire 'input' continuously while dragging. Reprocessing every
+  // photo on every single tick gets choppy once there are many photos, so
+  // the actual reprocess is debounced — the number readout still updates
+  // instantly, only the (heavier) canvas redraw waits a beat for the drag
+  // to settle. When a photo is focused, only that one photo is touched.
+  let sliderReprocessTimer = null;
+  function scheduleReprocess(){
+    clearTimeout(sliderReprocessTimer);
+    sliderReprocessTimer = setTimeout(reprocessAll, 60);
+  }
+  function scheduleFocusedReprocess(entry){
+    clearTimeout(sliderReprocessTimer);
+    sliderReprocessTimer = setTimeout(() => {
+      processImage(entry);
+      renderFilmstrip();
+      renderMural();
+    }, 60);
+  }
+
   ['saturation','sepia','fade','split','balance','grain','vignette'].forEach(k => {
     const el = document.getElementById('s-'+k);
     el.addEventListener('input', () => {
-      state.settings[k] = parseInt(el.value, 10);
-      document.getElementById('v-'+k).textContent = state.settings[k];
+      const val = parseInt(el.value, 10);
+      document.getElementById('v-'+k).textContent = val;
       state.activePreset = null;
       highlightPreset();
-      reprocessAll();
+      const focused = getFocusedEntry();
+      if(focused){
+        focused.customSettings[k] = val;
+        scheduleFocusedReprocess(focused);
+        return;
+      }
+      state.settings[k] = val;
+      scheduleReprocess();
     });
   });
 
@@ -1152,6 +1260,8 @@
       };
     });
     reprocessAll();
+    const focused = getFocusedEntry();
+    if(focused) syncSliders(focused.customSettings);
   });
 
   resetFiltersBtn.addEventListener('click', () => {
@@ -1160,6 +1270,11 @@
       entry.filterMode = 'global';
       entry.customSettings = null;
     });
+    if(state.focusId){
+      state.focusId = null;
+      syncSliders(state.settings);
+      highlightPreset();
+    }
     reprocessAll();
   });
 
@@ -1199,7 +1314,7 @@
       // given, so upload order is preserved regardless of how fast each image
       // decodes. The image data is filled in once it's actually ready.
       const entry = {
-        id: nextId++, name: file.name, img: null, canvas: null, thumb: null,
+        id: nextId++, name: file.name, dataUrl: null, srcCanvas: null, canvas: null, thumb: null,
         caption: '', filterMode: 'global', customSettings: null, mosaicRotation: 0, excludeFromRandom: false,
         cropOffset: {x:0, y:0}, loading: true
       };
@@ -1208,16 +1323,20 @@
 
       const reader = new FileReader();
       reader.onload = ev => {
+        entry.dataUrl = ev.target.result;
         const img = new Image();
         img.onload = () => {
-          entry.img = img;
+          // Build the small working copy once here, then let the full-res
+          // decoded `img` go out of scope — only the cheap srcCanvas (and
+          // the compressed dataUrl, kept for export) stay in memory.
+          entry.srcCanvas = buildSrcCanvas(img, PROC_MAX);
           entry.loading = false;
           processImage(entry);
           state.mosaicLayout = null;
           renderFilmstrip();
           renderMural();
         };
-        img.src = ev.target.result;
+        img.src = entry.dataUrl;
       };
       reader.readAsDataURL(file);
     });
@@ -1230,16 +1349,39 @@
     return state.settings;
   }
 
-  function processImage(entry){
-    const img = entry.img;
+  // Downscales a decoded <img> into a plain canvas capped at maxSize on its
+  // longest side. This is the one-time, unfiltered "source of truth" that
+  // filters get reapplied to on every reprocess — cheap to keep resident
+  // and cheap to redraw from (no decode step, just drawImage).
+  function buildSrcCanvas(img, maxSize){
     let w = img.naturalWidth, h = img.naturalHeight;
-    const scale = Math.min(1, PROC_MAX / Math.max(w,h));
+    const scale = Math.min(1, maxSize / Math.max(w,h));
     w = Math.round(w*scale); h = Math.round(h*scale);
+    const c = document.createElement('canvas');
+    c.width = w; c.height = h;
+    c.getContext('2d').drawImage(img, 0, 0, w, h);
+    return c;
+  }
+
+  // Decodes a dataUrl fresh (async) into a downscaled canvas. Only used at
+  // export time, once per photo — never kept around afterward.
+  function decodeToCanvas(dataUrl, maxSize){
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(buildSrcCanvas(img, maxSize));
+      img.onerror = reject;
+      img.src = dataUrl;
+    });
+  }
+
+  function processImage(entry){
+    const src = entry.srcCanvas;
+    const w = src.width, h = src.height;
 
     const c = document.createElement('canvas');
     c.width = w; c.height = h;
     const ctx = c.getContext('2d');
-    ctx.drawImage(img, 0, 0, w, h);
+    ctx.drawImage(src, 0, 0);
 
     applyVintage(ctx, w, h, resolveSettings(entry));
     entry.canvas = c;
@@ -1350,6 +1492,13 @@
       row.className = 'frame-item';
       row.draggable = true;
       row.dataset.id = entry.id;
+      if(state.focusId === entry.id){
+        row.classList.add('is-focused');
+      } else if(!entry.filterMode || entry.filterMode === 'global'){
+        row.classList.add('is-live');
+      } else {
+        row.classList.add('is-locked');
+      }
 
       const top = document.createElement('div');
       top.className = 'row-top';
@@ -1357,9 +1506,13 @@
         '<span class="fnum">N°'+String(idx+1).padStart(2,'0')+'</span>'+
         '<img src="'+(entry.thumb || TRANSPARENT_PX)+'" style="'+(entry.thumb ? '' : 'opacity:.3;')+'">'+
         '<span class="fname">'+entry.name+(entry.loading ? ' · carregando…' : '')+'</span>'+
+        '<button class="mini-focus'+(state.focusId === entry.id ? ' active' : '')+'" title="Editar só esta foto com os sliders (isolada das outras)">◉</button>'+
         '<button class="mini-lock'+(entry.excludeFromRandom ? ' active' : '')+'" title="Não incluir esta foto no aleatório">⚿</button>'+
         '<button class="mini-star'+(entry.isOverlay ? ' active' : '')+'" title="Destacar como camada por cima">✦</button>'+
         '<button title="Remover">×</button>';
+      top.querySelector('button.mini-focus').addEventListener('click', () => {
+        toggleFocus(entry);
+      });
       top.querySelector('button.mini-lock').addEventListener('click', () => {
         entry.excludeFromRandom = !entry.excludeFromRandom;
         renderFilmstrip();
@@ -1378,6 +1531,11 @@
       });
       top.querySelector('button[title="Remover"]').addEventListener('click', () => {
         state.images = state.images.filter(e => e.id !== entry.id);
+        if(state.focusId === entry.id){
+          state.focusId = null;
+          syncSliders(state.settings);
+          highlightPreset();
+        }
         state.mosaicLayout = null;
         renderFilmstrip(); renderMural();
       });
@@ -1410,7 +1568,7 @@
       });
       if(entry.filterMode === 'custom'){
         const opt = document.createElement('option');
-        opt.value = 'custom'; opt.textContent = 'Randômico ✦';
+        opt.value = 'custom'; opt.textContent = 'Personalizado ✦';
         sel.appendChild(opt);
         sel.value = 'custom';
         sel.classList.add('is-custom');
@@ -1424,6 +1582,11 @@
         if(sel.value === 'custom') return;
         entry.filterMode = sel.value;
         entry.customSettings = null;
+        if(state.focusId === entry.id){
+          state.focusId = null;
+          syncSliders(state.settings);
+          highlightPreset();
+        }
         processImage(entry);
         renderFilmstrip();
         renderMural();
@@ -1505,15 +1668,34 @@
   function updatePaletteLiveCount(){
     const el = document.getElementById('paletteLiveCount');
     if(!el) return;
+    el.innerHTML = '';
+    el.classList.remove('is-focus-banner');
     const total = state.images.length;
-    if(total === 0){ el.textContent = ''; return; }
+    if(total === 0) return;
+
+    const focused = getFocusedEntry();
+    if(focused){
+      const idx = state.images.indexOf(focused);
+      el.classList.add('is-focus-banner');
+      const span = document.createElement('span');
+      span.innerHTML = 'Editando só a <strong style="color:var(--amber)">foto N°'+String(idx+1).padStart(2,'0')+'</strong> — as outras '+(total-1)+' foto(s) não mudam.';
+      el.appendChild(span);
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'focus-exit-btn';
+      btn.textContent = 'Sair do foco';
+      btn.addEventListener('click', exitFocus);
+      el.appendChild(btn);
+      return;
+    }
+
     const liveCount = state.images.filter(e => !e.filterMode || e.filterMode === 'global').length;
     if(liveCount === total){
-      el.innerHTML = 'Os sliders abaixo ajustam <strong>todas as '+total+' fotos</strong> (todas em modo Automático).';
+      el.innerHTML = 'Os sliders abaixo ajustam <strong>todas as '+total+' fotos</strong> (todas em modo Automático, com borda <strong style="color:var(--teal)">azul-esverdeada</strong> na lista).';
     } else if(liveCount === 0){
-      el.innerHTML = 'Os sliders abaixo <strong>não afetam nenhuma foto</strong> agora — todas têm uma paleta fixa ou são do Randômico. Troque uma foto para "Automático" no seletor dela pra ligá-la aos sliders.';
+      el.innerHTML = 'Os sliders abaixo <strong>não afetam nenhuma foto</strong> agora — todas têm uma paleta fixa. Clique em <strong style="color:var(--amber)">◉</strong> numa foto pra editá-la sozinha, ou volte alguma pra "Automático".';
     } else {
-      el.innerHTML = 'Os sliders abaixo ajustam <strong>'+liveCount+' de '+total+' fotos</strong> (as que estão em "Automático" — destacadas em <strong style="color:var(--teal)">verde-azulado</strong> no seletor de cada foto).';
+      el.innerHTML = 'Os sliders abaixo ajustam <strong>'+liveCount+' de '+total+' fotos</strong> — as com borda <strong style="color:var(--teal)">azul-esverdeada</strong> na lista ao lado. As demais estão travadas numa paleta fixa (mais apagadas).';
     }
   }
 
@@ -1718,7 +1900,7 @@
   // Classifies a photo's own aspect ratio so the mosaic can (optionally) match
   // block shape to it: wide photos → wide blocks, tall photos → tall blocks.
   function getOrientation(entry){
-    const src = entry.canvas || entry.img;
+    const src = entry.canvas || entry.srcCanvas;
     if(!src) return 'square';
     const w = src.width || src.naturalWidth || 1;
     const h = src.height || src.naturalHeight || 1;
@@ -2083,21 +2265,51 @@
     renderMural();
   });
 
-  downloadBtn.addEventListener('click', () => {
-    const {w, h} = computeCanvasDims(state.exportSize, state.aspectW, state.aspectH);
-    const savedW = muralCanvas.width, savedH = muralCanvas.height;
-    muralCanvas.width = w; muralCanvas.height = h;
-    renderMural();
-    muralCanvas.toBlob(blob => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'mural-revelado.png';
-      a.click();
-      URL.revokeObjectURL(url);
-      muralCanvas.width = savedW; muralCanvas.height = savedH;
+  downloadBtn.addEventListener('click', async () => {
+    if(state.images.length === 0) return;
+    const originalLabel = downloadBtn.textContent;
+    downloadBtn.disabled = true;
+    downloadBtn.textContent = 'Gerando em alta resolução…';
+
+    // Swap in a freshly-decoded, full-resolution filtered canvas per photo —
+    // built only for this export, discarded right after. The small working
+    // canvases (entry.canvas) used for live editing are restored afterward,
+    // so memory doesn't grow from doing this.
+    const savedCanvases = new Map();
+    try {
+      await Promise.all(state.images.map(async entry => {
+        savedCanvases.set(entry.id, entry.canvas);
+        const hiRes = await decodeToCanvas(entry.dataUrl, EXPORT_PROC_MAX);
+        const ctx = hiRes.getContext('2d');
+        applyVintage(ctx, hiRes.width, hiRes.height, resolveSettings(entry));
+        entry.canvas = hiRes;
+      }));
+
+      const {w, h} = computeCanvasDims(state.exportSize, state.aspectW, state.aspectH);
+      const savedW = muralCanvas.width, savedH = muralCanvas.height;
+      muralCanvas.width = w; muralCanvas.height = h;
       renderMural();
-    }, 'image/png');
+
+      await new Promise(resolve => {
+        muralCanvas.toBlob(blob => {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'mural-revelado.png';
+          a.click();
+          URL.revokeObjectURL(url);
+          muralCanvas.width = savedW; muralCanvas.height = savedH;
+          resolve();
+        }, 'image/png');
+      });
+    } finally {
+      state.images.forEach(entry => {
+        if(savedCanvases.has(entry.id)) entry.canvas = savedCanvases.get(entry.id);
+      });
+      renderMural();
+      downloadBtn.disabled = false;
+      downloadBtn.textContent = originalLabel;
+    }
   });
 
   buildPresets();
