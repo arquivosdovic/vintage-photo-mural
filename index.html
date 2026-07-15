@@ -393,6 +393,10 @@
   .btn-secondary:hover{border-color:var(--amber-dim);color:var(--amber);}
   #mosaicControls{display:none;}
   #mosaicControls.show{display:block;}
+  #gridControls{display:none;}
+  #gridControls.show{display:block;}
+  .field-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:10px;}
+  .field-row .mini-select{max-width:140px;}
 
   .stage{
     background:var(--panel);
@@ -685,6 +689,23 @@
           </div>
         </div>
 
+        <div id="gridControls" class="show">
+          <div class="field-row">
+            <span>Colunas</span>
+            <select class="mini-select" id="gridColumnsSelect">
+              <option value="auto">Automático</option>
+            </select>
+          </div>
+          <div class="field-row">
+            <span>Última linha incompleta</span>
+          </div>
+          <div class="btn-group" id="lastRowGroup">
+            <button class="opt-btn active" data-lastrow="center">Centralizar</button>
+            <button class="opt-btn" data-lastrow="stretch">Esticar</button>
+            <button class="opt-btn" data-lastrow="left">Alinhar à esquerda</button>
+          </div>
+        </div>
+
         <div class="subhead">Fundo desfocado</div>
         <div class="toggle-row">
           <span>Desfocar tudo que não é destaque</span>
@@ -732,6 +753,8 @@
     frameStyle: 'none',
     showCaptions: false,
     mosaicLayout: null,
+    gridColumns: 'auto',
+    gridLastRow: 'center',
     matColor: '#0f0c09',
     lastBoxes: [],
     useOrientation: true,
@@ -778,6 +801,9 @@
   const resetFiltersBtn = document.getElementById('resetFiltersBtn');
   const shuffleBtn = document.getElementById('shuffleBtn');
   const mosaicControls = document.getElementById('mosaicControls');
+  const gridControls = document.getElementById('gridControls');
+  const gridColumnsSelect = document.getElementById('gridColumnsSelect');
+  const lastRowGroup = document.getElementById('lastRowGroup');
   const captionToggle = document.getElementById('t-captions');
   const matColorInput = document.getElementById('matColorInput');
   const matColorHex = document.getElementById('matColorHex');
@@ -979,12 +1005,45 @@
       btn.classList.add('active');
       state.layoutMode = btn.dataset.layout;
       mosaicControls.classList.toggle('show', state.layoutMode === 'mosaic');
+      gridControls.classList.toggle('show', state.layoutMode === 'grid');
       if(state.layoutMode === 'mosaic' && !state.mosaicLayout){
         regenerateMosaic();
       }
       renderMural();
     });
   });
+
+  gridColumnsSelect.addEventListener('change', () => {
+    state.gridColumns = gridColumnsSelect.value;
+    renderMural();
+  });
+
+  document.querySelectorAll('#lastRowGroup .opt-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#lastRowGroup .opt-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      state.gridLastRow = btn.dataset.lastrow;
+      renderMural();
+    });
+  });
+
+  // Keeps the "Colunas" dropdown populated with sensible choices for however
+  // many photos are currently loaded (never more columns than photos).
+  function refreshGridColumnsOptions(){
+    const n = state.images.filter(e => e.canvas && !e.isOverlay).length;
+    const max = Math.max(1, Math.min(12, n || 1));
+    const prev = gridColumnsSelect.value;
+    gridColumnsSelect.innerHTML = '<option value="auto">Automático</option>';
+    for(let c=1; c<=max; c++){
+      const opt = document.createElement('option');
+      opt.value = String(c);
+      opt.textContent = c === 1 ? '1 coluna' : c + ' colunas';
+      gridColumnsSelect.appendChild(opt);
+    }
+    const stillValid = prev === 'auto' || parseInt(prev,10) <= max;
+    gridColumnsSelect.value = stillValid ? prev : 'auto';
+    state.gridColumns = gridColumnsSelect.value;
+  }
 
   document.querySelectorAll('#frameGroup .opt-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1284,6 +1343,7 @@
   }
 
   function renderFilmstrip(){
+    refreshGridColumnsOptions();
     filmstrip.innerHTML = '';
     state.images.forEach((entry, idx) => {
       const row = document.createElement('div');
@@ -1457,8 +1517,13 @@
     }
   }
 
-  function computeGrid(n, aspect){
+  function computeGrid(n, aspect, forcedCols){
     if(n <= 0) return {cols:1, rows:1};
+    if(forcedCols){
+      const cols = Math.max(1, Math.min(forcedCols, n));
+      const rows = Math.ceil(n/cols);
+      return {cols, rows};
+    }
     aspect = aspect || 1;
     let best = null;
     const approx = Math.sqrt(n*aspect);
@@ -1603,7 +1668,8 @@
     const images = state.images.filter(e => e.canvas && !e.isOverlay);
     const n = images.length;
     if(n === 0) return;
-    const {cols, rows} = computeGrid(n, width/height);
+    const forcedCols = (state.gridColumns && state.gridColumns !== 'auto') ? parseInt(state.gridColumns, 10) : null;
+    const {cols, rows} = computeGrid(n, width/height, forcedCols);
     layoutNote.textContent = 'GRADE ' + cols + ' × ' + rows + ' — ' + n + ' QUADROS';
 
     const refSize = Math.min(width, height);
@@ -1617,20 +1683,35 @@
 
     const fullRows = Math.floor(n/cols);
     const lastRowCount = n - fullRows*cols;
+    const lastRowMode = state.gridLastRow || 'center';
 
     images.forEach((entry, idx) => {
       const row = Math.floor(idx/cols);
       const col = idx % cols;
       const isLastRow = row === rows-1 && lastRowCount !== 0 && lastRowCount !== cols;
       const rowItemCount = isLastRow ? lastRowCount : cols;
-      const rowWidth = rowItemCount*cellW + (rowItemCount+1)*gutter;
-      const rowOffsetX = outerMargin + (innerW - rowWidth)/2;
 
-      const x = rowOffsetX + gutter + col*(cellW+gutter);
+      // Default: same cell size as the rest of the grid, row centered.
+      // "stretch" widens the last row's cells so they fill the full width,
+      // removing the empty side gap entirely. "left" keeps the default cell
+      // size but drops the centering, so any gap sits on the right only.
+      let itemW = cellW;
+      let rowOffsetX;
+      if(isLastRow && lastRowMode === 'stretch'){
+        itemW = (innerW - gutter*(rowItemCount+1)) / rowItemCount;
+        rowOffsetX = outerMargin;
+      } else if(isLastRow && lastRowMode === 'left'){
+        rowOffsetX = outerMargin;
+      } else {
+        const rowWidth = rowItemCount*cellW + (rowItemCount+1)*gutter;
+        rowOffsetX = outerMargin + (innerW - rowWidth)/2;
+      }
+
+      const x = rowOffsetX + gutter + col*(itemW+gutter);
       const y = outerMargin + gutter + row*(cellH+gutter);
 
-      drawFramedPhoto(ctx, entry, idx, x, y, cellW, cellH, 0);
-      state.lastBoxes.push({entry, idx, x, y, w:cellW, h:cellH, rotation:0, area: computeImageArea(cellW, cellH)});
+      drawFramedPhoto(ctx, entry, idx, x, y, itemW, cellH, 0);
+      state.lastBoxes.push({entry, idx, x, y, w:itemW, h:cellH, rotation:0, area: computeImageArea(itemW, cellH)});
     });
   }
 
@@ -1657,13 +1738,19 @@
       if(tier === 'medium') return Math.random() < 0.5 ? [[1,2],[2,1],[1,1]] : [[2,1],[1,2],[1,1]];
       return [[2,2],[1,2],[2,1],[1,1]];
     }
+    // When orientation-matching is on, never fall back to the *opposite*
+    // shape (e.g. a tall 2x1 block for a landscape photo) — only the
+    // matching shape, then a neutral square, then the 1x1 safety net.
+    // Previously the square [2,2] was tried before the matching shape at
+    // the "large" tier, so most large blocks ended up square regardless of
+    // the toggle; this keeps the matching shape first at every tier.
     if(orientation === 'landscape'){
-      if(tier === 'medium') return [[1,2],[2,1],[1,1]];
-      return [[2,2],[1,2],[2,1],[1,1]];
+      if(tier === 'medium') return [[1,2],[1,1]];
+      return [[1,2],[2,2],[1,1]];
     }
     // portrait
-    if(tier === 'medium') return [[2,1],[1,2],[1,1]];
-    return [[2,2],[2,1],[1,2],[1,1]];
+    if(tier === 'medium') return [[2,1],[1,1]];
+    return [[2,1],[2,2],[1,1]];
   }
 
   // Builds a variable-sized block layout on a fine grid: some photos take 1x1,
