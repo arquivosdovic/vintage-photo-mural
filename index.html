@@ -432,11 +432,26 @@
     cursor:grab;
   }
   #muralCanvas.dragging{cursor:grabbing;}
+  .canvas-wrap.transparent-bg #muralCanvas{
+    background-image:
+      linear-gradient(45deg,#4a453d 25%,transparent 25%),
+      linear-gradient(-45deg,#4a453d 25%,transparent 25%),
+      linear-gradient(45deg,transparent 75%,#4a453d 75%),
+      linear-gradient(-45deg,transparent 75%,#4a453d 75%);
+    background-size:20px 20px;
+    background-position:0 0,0 10px,10px -10px,-10px 0px;
+    background-color:#39352f;
+  }
   .color-row{
     display:flex;
     align-items:center;
     gap:10px;
     margin-bottom:18px;
+  }
+  .color-row.disabled,
+  .swatch-row.disabled{
+    opacity:0.35;
+    pointer-events:none;
   }
   input[type=color]{
     width:38px;height:32px;
@@ -673,7 +688,11 @@
         <h2>Composição</h2>
 
         <div class="subhead">Cor do fundo</div>
-        <div class="color-row">
+        <div class="toggle-row">
+          <span>Fundo transparente</span>
+          <div class="switch" id="t-bgTransparent" data-key="bgTransparent"></div>
+        </div>
+        <div class="color-row" id="matColorRow">
           <input type="color" id="matColorInput" value="#0f0c09">
           <input type="text" class="mini-input hex-input" id="matColorHex" value="#0F0C09" maxlength="7" spellcheck="false">
         </div>
@@ -781,6 +800,7 @@
     gridColumns: 'auto',
     gridLastRow: 'center',
     matColor: '#0f0c09',
+    bgTransparent: false,
     lastBoxes: [],
     useOrientation: true,
     aspectW: 1,
@@ -840,6 +860,8 @@
   const matColorInput = document.getElementById('matColorInput');
   const matColorHex = document.getElementById('matColorHex');
   const matColorSwatches = document.getElementById('matColorSwatches');
+  const matColorRow = document.getElementById('matColorRow');
+  const bgTransparentToggle = document.getElementById('t-bgTransparent');
   const canvasWrap = document.querySelector('.canvas-wrap');
   const ratioPresetsEl = document.getElementById('ratioPresets');
   const customRatioInput = document.getElementById('customRatioInput');
@@ -1205,6 +1227,20 @@
   }
   buildMatColorSwatches();
   setMatColor(state.matColor);
+
+  function setBgTransparent(on){
+    state.bgTransparent = on;
+    bgTransparentToggle.classList.toggle('on', on);
+    matColorRow.classList.toggle('disabled', on);
+    matColorSwatches.classList.toggle('disabled', on);
+    matColorInput.disabled = on;
+    matColorHex.disabled = on;
+    canvasWrap.classList.toggle('transparent-bg', on);
+    renderMural();
+  }
+  bgTransparentToggle.addEventListener('click', () => {
+    setBgTransparent(!state.bgTransparent);
+  });
 
   matColorInput.addEventListener('input', () => {
     setMatColor(matColorInput.value);
@@ -2102,8 +2138,10 @@
     const bg = document.createElement('canvas');
     bg.width = width; bg.height = height;
     const bgCtx = bg.getContext('2d');
-    bgCtx.fillStyle = state.matColor;
-    bgCtx.fillRect(0,0,width,height);
+    if(!state.bgTransparent){
+      bgCtx.fillStyle = state.matColor;
+      bgCtx.fillRect(0,0,width,height);
+    }
 
     if(state.layoutMode === 'mosaic'){
       renderMosaicLayout(bgCtx, width, height);

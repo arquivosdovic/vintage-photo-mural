@@ -12,7 +12,7 @@ Um editor de mural fotográfico vintage, direto no navegador — sem instalaçã
 - **Filtro por foto**: cada imagem pode seguir os sliders globais ("Automático"), usar uma paleta fixa, ou receber um resultado aleatório — com indicação visual clara de quais fotos estão ao vivo com os sliders.
 - **Randomizador controlável**: escolha quais paletas entram no sorteio e trave fotos individuais para que fiquem de fora.
 - **Camadas em destaque**: marque uma ou mais fotos para flutuarem por cima do mural, com controle de tamanho, rotação e posição (arrastando direto no canvas), enquanto o fundo pode ser desfocado para dar profundidade.
-- **Cor de fundo**: seletor visual, campo de hexadecimal e atalhos de tons neutros (branco, creme, cinzas, pretos).
+- **Cor de fundo**: seletor visual, campo de hexadecimal, atalhos de tons neutros (branco, creme, cinzas, pretos) e opção de fundo transparente (útil para exportar só as fotos em destaque, com canal alfa, e compor depois sobre outro fundo).
 - **Proporções e exportação**: proporções predefinidas ou personalizadas, e download em PNG em 1600 / 2400 / 3200px.
 
 ## Como usar
